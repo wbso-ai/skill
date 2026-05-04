@@ -1,0 +1,15 @@
+{
+  "name": "wbso-ai",
+  "description": "WBSO.ai plugins voor Claude Code en andere AI-agents",
+  "owner": {
+    "name": "WBSO.ai",
+    "url": "https://wbso.ai"
+  },
+  "plugins": [
+    {
+      "name": "wbso",
+      "description": "Registreer WBSO-uren via een gesprek. Stelt 2-3 gerichte vragen, beoordeelt WBSO-waardigheid op basis van RVO-criteria, en boekt via de WBSO.ai compliance API.",
+      "source": "./packages/wbso"
+    }
+  ]
+}
