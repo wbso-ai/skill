@@ -52,15 +52,16 @@ Eén voor één vragen, niet alles tegelijk:
    link kiest automatisch je bedrijf, of laat een keuzelijst zien als
    je er meerdere hebt."*
 
-Valideer de key:
+Valideer de key (de API key is gescoped op één gebruiker, dus die hoef
+je niet apart mee te sturen):
 
 ```bash
 curl -sS -o /tmp/wbso-validate.$$ -w '%{http_code}' \
   -H "Authorization: Bearer <KEY>" \
-  "${WBSO_API_BASE_URL:-https://portal.wbso.ai}/api/v1/compliance/context?user=<EMAIL>&date=$(date +%F)"
+  "${WBSO_API_BASE_URL:-https://portal.wbso.ai}/api/v1/compliance/context?date=$(date +%F)"
 ```
 
-`200` = OK; `401`/`404` = vraag opnieuw; anders = toon respons.
+`200` = OK; `401` = key ongeldig, vraag opnieuw; anders = toon respons.
 
 Schrijf de config (mode 600):
 
@@ -84,10 +85,26 @@ source ~/.config/wbso/config
 WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-https://portal.wbso.ai}"
 
 curl -sS -G -H "Authorization: Bearer $WBSO_API_KEY" \
-  --data-urlencode "user=$WBSO_USER" \
   --data-urlencode "date=$(date +%F)" \
   "$WBSO_API_BASE_URL/api/v1/compliance/context"
 ```
+
+### Voor wie boek je?
+
+Een API key is gekoppeld aan één gebruiker — alle calls werken namens
+die persoon. Bij `time_entries` en `evidence` mag je optioneel een
+`user` (POST) / `user_email` (POST/GET) parameter meesturen om voor
+een collega te werken:
+
+- **Submission_admin** of **tech_contact**: kan voor elke collega
+  binnen het bedrijf boeken of onderbouwing toevoegen — net als in
+  het portal.
+- **S&O medewerker** (geen rol): mag alleen voor zichzelf — een
+  afwijkende `user`-param geeft `403 Forbidden`.
+
+Stuur de param dus **alleen mee als de gebruiker expliciet voor een
+collega wil boeken**. Anders weglaten en de standaard (key-eigenaar)
+gebruiken.
 
 Velden in de respons:
 
@@ -262,7 +279,7 @@ WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-https://portal.wbso.ai}"
 curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/time_entries" \
   -H "Authorization: Bearer $WBSO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"time_entry\":{\"user\":\"$WBSO_USER\",\"project\":\"<slug>\",\"date\":\"<YYYY-MM-DD>\",\"duration\":<hours>}}"
+  -d "{\"time_entry\":{\"project\":\"<slug>\",\"date\":\"<YYYY-MM-DD>\",\"duration\":<hours>}}"
 ```
 
 Status: `201` created; `200` updated (idempotent op user+project+date);
@@ -321,7 +338,7 @@ datum aan*.
 curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/evidence" \
   -H "Authorization: Bearer $WBSO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"evidence\":{\"user_email\":\"$WBSO_USER\",\"title\":\"<titel ≤80>\",\"description\":\"<beschrijving>\",\"starts_at\":\"<DATE>T09:00:00Z\",\"ends_at\":\"<DATE>T17:00:00Z\",\"all_day\":true,\"source\":\"wbso-skill\",\"external_id\":\"time_entry-<id>\"}}"
+  -d "{\"evidence\":{\"title\":\"<titel ≤80>\",\"description\":\"<beschrijving>\",\"starts_at\":\"<DATE>T09:00:00Z\",\"ends_at\":\"<DATE>T17:00:00Z\",\"all_day\":true,\"source\":\"wbso-skill\",\"external_id\":\"time_entry-<id>\"}}"
 ```
 
 `external_id` = `time_entry-<id>` van de zojuist aangemaakte boeking,
