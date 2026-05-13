@@ -69,3 +69,82 @@ cd skill
 claude plugins validate ./packages/wbso
 claude --plugin-dir ./packages/wbso  # eenmalig test, geen install
 ```
+
+## Releasen
+
+Een nieuwe versie publiceren doe je met:
+
+```bash
+bin/release
+```
+
+Dat script:
+
+1. Berekent de nieuwe versie op basis van het aantal commits
+   (`1.<commit-count>`)
+2. Bumpt `version` in `packages/wbso/.claude-plugin/plugin.json`
+3. Maakt een release-commit + git-tag (`v1.N`)
+4. Pusht alles naar `origin/main`
+
+Claude Code ziet die versie-bump als nieuwe release. Gebruikers
+pakken hem op met:
+
+```bash
+claude plugins update wbso@wbso-ai
+```
+
+### Waarom een expliciete `version`?
+
+Als `version` in `plugin.json` staat krijgen gebruikers pas een
+update zodra jij dat veld bumpt. Zonder `version` zou elke commit op
+deze repo als nieuwe versie tellen (gebruikt de commit-SHA), wat
+ruis oplevert voor README-tweaks of CI-fixes.
+
+## Wisselen tussen GitHub-versie en lokale versie
+
+Je kunt de plugin op twee manieren installeren:
+
+- **GitHub-versie** (`wbso@wbso-ai`) — stabiel, update via
+  `claude plugins update`
+- **Lokale versie** (`wbso@wbso-ai-local`) — pakt elke wijziging in
+  `~/Documents/skill` direct op, handig voor development
+
+Met `claude plugins list` zie je welke geïnstalleerd staan en in welke
+scope (`user` = overal, `local` = alleen in huidige map). Je herkent
+ze aan de suffix achter `@`.
+
+### Overstappen naar de GitHub-versie
+
+```bash
+claude plugins uninstall wbso@wbso-ai-local --scope local
+claude plugins install wbso@wbso-ai
+```
+
+### Overstappen naar de lokale versie
+
+Eerst de marketplace registreren (eenmalig):
+
+```bash
+claude plugins marketplace add ~/Documents/skill
+```
+
+Daarna installeren:
+
+```bash
+claude plugins uninstall wbso@wbso-ai
+claude plugins install wbso@wbso-ai-local
+```
+
+Updaten = `git pull` in `~/Documents/skill`. Claude Code herstarten
+om de wijzigingen op te pikken.
+
+### Allebei tegelijk geïnstalleerd?
+
+Verwarrend, want dan kan onduidelijk zijn welke versie actief is.
+Disable de versie die je niet wilt:
+
+```bash
+claude plugins disable wbso@wbso-ai-local
+# of
+claude plugins disable wbso@wbso-ai
+```
