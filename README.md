@@ -12,10 +12,36 @@ claude plugins install wbso@wbso-ai
 
 Daarna in Claude Code: `/wbso` of zeg "ik ga uren boeken".
 
-De eerste keer dat je `/wbso` runt vraagt de skill je portal-URL,
-e-mailadres en API key, valideert die tegen de portal en slaat ze op in
-`~/.config/wbso/config` (mode 600). Een API key maak je aan op
-`https://portal.wbso.ai/companies/<bedrijf>/compliance/api_keys`.
+De eerste keer dat je `/wbso` runt vraagt de skill of je al een account
+hebt. Twee paden:
+
+- **Nieuw account**: naam, e-mail en bedrijfsnaam invullen → de skill
+  maakt een account aan, opent direct het stappenplan in je browser
+- **Bestaand account**: e-mail + API key plakken (aan te maken op
+  `https://portal.wbso.ai/companies/<bedrijf>/compliance/api_keys`)
+
+Beide paden slaan je gegevens op in `~/.config/wbso/config` (mode 600).
+
+## In- en uitloggen
+
+Vijf skill-commando's:
+
+- `/wbso` — registreert uren (vraagt zelf om setup als je nog niet
+  ingelogd bent)
+- `/wbso:signup` — maakt een nieuw WBSO.ai-account aan en opent de
+  onboarding-wizard in je browser
+- `/wbso:auth` — opent de API keys-pagina in je browser, plak je
+  nieuwe key terug in de skill om in te loggen. Ook handig om van
+  account te wisselen
+- `/wbso:whoami` — laat zien onder welk account en bedrijf je nu
+  ingelogd bent
+- `/wbso:logout` — verwijdert `~/.config/wbso/config`
+
+Handmatig uitloggen kan ook met:
+
+```bash
+rm ~/.config/wbso/config
+```
 
 ## Updaten
 
@@ -27,7 +53,7 @@ Daarna Claude Code herstarten om de nieuwe versie op te pikken.
 
 ## Wat zit erin
 
-### `wbso`
+### `wbso` skill
 
 Conversational uren-registratie:
 
@@ -36,19 +62,39 @@ Conversational uren-registratie:
   oplossing of bestaande tech)
 - Beoordeelt WBSO-waardigheid op basis van RVO-criteria — transparant,
   met redenering erbij
-- Boekt direct via `POST /api/v1/compliance/time_entries`
-- Pakt `git reflog` op als geheugensteun (vangt ook WIP-commits en
-  abandoned experimenten) — blijft volledig lokaal: alleen project +
-  uren + datum gaan naar de API
+- Pakt `git reflog` én Claude Code sessies van vandaag op als
+  geheugensteun (vangt ook WIP-commits, abandoned experimenten en
+  conversaties zonder commits) — blijft volledig lokaal: alleen
+  project + uren + datum gaan naar de API
 - Bij `missing_evidence` alert: vraagt of je in 1–2 zinnen wil
   vastleggen wat je gedaan hebt en koppelt dat als onderbouwing
 
+### `wbso` CLI
+
+De skill praat met de WBSO.ai compliance API via een meegeleverde CLI
+in `bin/wbso`. Die staat automatisch in `$PATH` zodra de plugin actief
+is — je kunt 'm ook handmatig vanuit een shell aanroepen:
+
+```
+wbso signup --first-name X --last-name Y --email Z --company-name W
+wbso login --api-key Y
+wbso context [--date YYYY-MM-DD] [--user-email X]
+wbso track-time --project SLUG --date YYYY-MM-DD --duration N
+wbso untrack-time --id N
+wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID]
+```
+
+De CLI is een dunne bash-wrapper rond de HTTP-endpoints. Hij laadt
+zelf je config + eventuele dev-override en geeft de server-respons
+ongewijzigd door — `wbso context` retourneert markdown met XML-tags
+(geoptimaliseerd voor LLM-input), de andere commands retourneren JSON.
+
 ## Privacy
 
-- Reflog en commit messages blijven **lokaal** — alleen project, uren
-  en datum gaan naar de API
+- Reflog, commit messages en Claude-sessieprompts blijven **lokaal** —
+  alleen project, uren en datum gaan naar de API
 - API key staat in `~/.config/wbso/config` met mode 600
-- Geen git history of broncode naar de server
+- Geen git history, broncode of sessie-inhoud naar de server
 
 ## Repo structuur
 
@@ -57,8 +103,13 @@ Conversational uren-registratie:
 packages/
 └── wbso/
     ├── .claude-plugin/plugin.json  # plugin metadata
+    ├── bin/wbso                    # CLI (bash, in $PATH bij activatie)
     └── skills/
-        └── wbso/SKILL.md           # de prompt
+        ├── wbso/SKILL.md           # uren registreren
+        ├── signup/SKILL.md         # /wbso:signup — account aanmaken
+        ├── auth/SKILL.md           # /wbso:auth — inloggen
+        ├── whoami/SKILL.md         # /wbso:whoami — wie ben ik
+        └── logout/SKILL.md         # /wbso:logout — uitloggen
 ```
 
 ## Lokaal testen
@@ -69,6 +120,24 @@ cd skill
 claude plugins validate ./packages/wbso
 claude --plugin-dir ./packages/wbso  # eenmalig test, geen install
 ```
+
+### Tegen een lokale server testen
+
+Standaard wijst de skill naar `https://portal.wbso.ai`. Voor lokale
+ontwikkeling kun je dit overrulen met een `.env.local` in je config-
+map:
+
+```bash
+mkdir -p ~/.config/wbso
+cp .env.local.example ~/.config/wbso/.env.local
+# pas WBSO_API_BASE_URL aan naar bv. http://localhost:3000
+```
+
+De `wbso` CLI sourcet die file automatisch bij elke aanroep. De URL
+vloeit door naar de config die na signup geschreven wordt, dus je
+hoeft 'm niet steeds opnieuw te zetten. Andere gebruikers die de
+plugin via de marketplace installeren krijgen de file niet, dus blijft
+dit een dev-only override.
 
 ## Releasen
 

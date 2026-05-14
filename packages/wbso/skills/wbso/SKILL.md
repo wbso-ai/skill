@@ -29,65 +29,95 @@ WBSO-bevestiging.
 
 Als er geen argument is meegegeven, volg de normale flow.
 
-## Stap 0: Config check
+## Werken via de `wbso` CLI
+
+Deze skill shipt een `wbso` CLI in `bin/` van de plugin — die staat
+automatisch in `$PATH` zodra de plugin actief is. Alle API-calls gaan
+via deze CLI; geen inline curls meer. De CLI laadt zelf
+`~/.config/wbso/.env.local` (dev-override) en `~/.config/wbso/config`
+(api-key + email), dus je hoeft niks te sourcen.
+
+Beschikbare subcommands:
+
+- `wbso signup --first-name X --last-name Y --email Z --company-name W`
+- `wbso login --api-key Y` (email wordt uit de respons gehaald)
+- `wbso context [--date YYYY-MM-DD] [--user-email X]`
+- `wbso track-time --project SLUG --date YYYY-MM-DD --duration N [--user-email X]`
+- `wbso untrack-time --id N`
+- `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
+
+Output:
+
+- `wbso context` retourneert **markdown met XML-tags** (verhaal-vorm,
+  geoptimaliseerd om te lezen — kijk naar `<status>`, `<project>` en
+  `<alert>` tags)
+- `wbso signup`, `wbso track-time`, `wbso evidence`, `wbso untrack-time`
+  retourneren **JSON** van de server (de skill leest die direct)
+- `wbso login` print `ok (<email>)` bij succes
+
+## Stap 0: Login check via `wbso context`
+
+Open de sessie met:
 
 ```bash
-state="missing"
-[ -f "$HOME/.config/wbso/config" ] && state="present"
-echo "wbso_config=$state"
+wbso context
 ```
 
-| state | actie |
-|-------|-------|
-| `present` | Source de config en ga door naar Stap 1 |
-| `missing` | Walk door de setup-flow hieronder, dan Stap 1 |
+De respons is markdown met XML-tags. Begint 'ie met
+`<status>not_logged_in</status>`? → doorloop de setup-flow hieronder,
+en run daarna `wbso context` opnieuw. Begint 'ie met `<status>ok</status>`?
+→ ga direct door naar Stap 2; je hebt alle context al en hoeft Stap 1
+niet meer apart te doen.
 
-### Setup-flow (alleen bij `missing`)
+### Setup-flow (alleen bij `not_logged_in`)
 
-Eén voor één vragen, niet alles tegelijk:
+Stuur in één plain-tekst-bericht (geen AskUserQuestion) een warme
+introductie en de eerste vraag. AskUserQuestion zou de tekst eroverheen
+duwen, dus voor de openingsbeurt is vrije tekst beter — Claude leest
+het antwoord van de gebruiker dan natuurlijk:
 
-1. *"Op welk e-mailadres ben je in het portal bekend?"*
-2. *"Plak je API key. Maak er een aan op
-   <https://portal.wbso.ai/companies/current/compliance/api_keys> — die
-   link kiest automatisch je bedrijf, of laat een keuzelijst zien als
-   je er meerdere hebt."*
+> *"Welkom bij WBSO.ai 👋 Ik help je je WBSO-uren registreren via een
+> kort gesprek. Je vertelt waar je vandaag aan hebt gewerkt, we kijken
+> samen of het WBSO-waardig is, en ik boek het direct in."*
+>
+> *"Eerst nog even setup: heb je al een account, of zal ik er eentje
+> aanmaken?"*
 
-Valideer de key (de API key is gescoped op één gebruiker, dus die hoef
-je niet apart mee te sturen):
+Wacht op de reactie van de gebruiker (vrije tekst). Interpreteer:
 
-```bash
-curl -sS -o /tmp/wbso-validate.$$ -w '%{http_code}' \
-  -H "Authorization: Bearer <KEY>" \
-  "${WBSO_API_BASE_URL:-https://portal.wbso.ai}/api/v1/compliance/context?date=$(date +%F)"
-```
+- "ja" / "ik heb al een account" / e-mailadres → **Bestaand account**
+- "nee" / "maak aan" / "nieuw" → **Nieuw account aanmaken**
 
-`200` = OK; `401` = key ongeldig, vraag opnieuw; anders = toon respons.
+Bij twijfel: vraag kort terug.
 
-Schrijf de config (mode 600):
+#### Bestaand account
 
-```bash
-mkdir -p "$HOME/.config/wbso"
-umask 077
-cat > "$HOME/.config/wbso/config" <<EOF
-WBSO_USER="<EMAIL>"
-WBSO_API_KEY="<KEY>"
-WBSO_API_BASE_URL="https://portal.wbso.ai"
-EOF
-chmod 600 "$HOME/.config/wbso/config"
-```
+Delegeer naar de `/wbso:auth` skill — die opent de API keys-pagina
+in de browser, vraagt de gebruiker de key te plakken, en slaat 'm op
+in de config. Run daarna `wbso context` opnieuw zodra de auth-skill
+klaar is.
+
+#### Nieuw account aanmaken
+
+Delegeer naar de `/wbso:signup` skill — die vraagt naam/email/bedrijf
+in één keer, maakt het account aan, opent de browser voor de wizard,
+en wacht tot de eerste projecten aangemaakt zijn. Run daarna
+`wbso context` opnieuw.
+
+#### Config schrijven
+
+`wbso signup` en `wbso login` schrijven de config zelf in
+`~/.config/wbso/config` (mode 600). Geen handmatige stappen nodig.
 
 ## Stap 1: Context ophalen
 
-Source de config en haal de server-side context op:
-
 ```bash
-source ~/.config/wbso/config
-WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-https://portal.wbso.ai}"
-
-curl -sS -G -H "Authorization: Bearer $WBSO_API_KEY" \
-  --data-urlencode "date=$(date +%F)" \
-  "$WBSO_API_BASE_URL/api/v1/compliance/context"
+wbso context
 ```
+
+Voor een specifieke datum: `wbso context --date 2026-05-14`. Voor een
+collega (alleen als de gebruiker dat expliciet wil):
+`wbso context --user-email collega@bedrijf.nl`.
 
 ### Voor wie boek je?
 
@@ -97,8 +127,8 @@ die persoon. Bij `time_entries` en `evidence` mag je optioneel een
 een collega te werken:
 
 - **Submission_admin** of **tech_contact**: kan voor elke collega
-  binnen het bedrijf boeken of onderbouwing toevoegen — net als in
-  het portal.
+  binnen het bedrijf boeken of onderbouwing toevoegen — net als op
+  WBSO.ai.
 - **S&O medewerker** (geen rol): mag alleen voor zichzelf — een
   afwijkende `user`-param geeft `403 Forbidden`.
 
@@ -119,14 +149,22 @@ Velden in de respons:
 | `events` | Agenda-items vandaag. |
 | `evidence` | Bestaande onderbouwing. |
 
-Als de cwd een git-repo is, haal lokale reflog erbij (blijft lokaal —
-niet naar de server):
+### Lokale signalen — al meegenomen door `wbso context`
 
-```bash
-git log --walk-reflogs --since=midnight --all --pretty=format:'%h %gd %gs' 2>/dev/null | head -50
-git log --all --since=midnight --pretty=format:'%h %s (%an)' 2>/dev/null | head -50
-git diff --stat 2>/dev/null
-```
+`wbso context` plakt automatisch twee extra XML-secties onder de
+server-respons als je cwd een git-repo is óf Claude Code sessies van
+vandaag heeft:
+
+- `<git_commits_today>` — commits van vandaag met SHA, auteur,
+  tijdstip, full message en bestand-diffstat
+- `<claude_user_prompts_today>` — alleen door de gebruiker zelf
+  ingetypte prompts uit Claude Code sessies van vandaag (geen
+  assistant-antwoorden, geen tool-calls)
+
+Blijft volledig lokaal — `wbso context` haalt server-data via HTTPS,
+lokale signalen leest 'ie uit `git log` en `~/.claude/projects/`.
+Alleen jouw uiteindelijke conclusie (project + uren + datum + evt.
+onderbouwing) gaat naar de API.
 
 ### Vooraf checken: alert-regels
 
@@ -147,26 +185,34 @@ Zo voorkomt de gebruiker een verrassing achteraf.
 De gebruiker heeft `/wbso` ingetypt om iets te boeken dat er nog niet
 staat. Vermijd dus voorstellen die het al-geboekte herhalen.
 
+**Doe altijd een gok, ook bij twijfel.** Stel nooit losse vragen
+("welk project?", "welke fase?", "hoeveel uur?") als opening — bouw
+één compleet voorstel en laat de gebruiker corrigeren via Stap 3.
+
 Vorm een voorstel:
 
 - **Project**: kies een actief project uit `projects` waarop nog
   ruimte is. Volgorde van voorkeur:
-  1. Project waarop activiteit (commits, reflog branch-namen, agenda)
-     wijst en dat **nog niet vandaag is geboekt**
+  1. Project waarop activiteit (commits, reflog branch-namen, agenda,
+     Claude-sessieprompts) wijst en dat **nog niet vandaag is geboekt**
   2. Een ander actief project waar activiteit op zit, ook al staan er
-     al uren — propose dan een **update** naar een hoger totaal als
-     er nieuwe commits zijn sinds laatste boeking
-  3. Pas als alles al geboekt staat én er geen onbenutte activiteit
-     is: zeg dat eerlijk en pivot naar opties (zie hieronder)
-- **Fase**: leid af uit commits, reflog branch-namen of agenda-titels,
-  matchend met `phases` van dat project
-- **WBSO-waardig**: volgens `instructions`. Commits met score > 6 zijn
-  sterke indicator wel-WBSO; onder 4 zelden. `wbso_reason` in één
-  korte zin, max 15 woorden
-- **Uren**: als de gebruiker `/wbso <uren>` typte, gebruik dat als
-  totaal voor de dag op het gekozen project. Anders: duur
-  agenda-block, inschatting uit aantal commits + reflog-activiteit,
-  of 8 uur bij volle werkdag
+     al uren — propose dan een **update** naar een hoger totaal
+  3. Bij twijfel: het eerste actieve project waar vandaag nog geen
+     uren op staan (alfabetisch op `title`)
+  4. Pas als alles al geboekt staat én er geen onbenutte activiteit
+     is: pivot naar de "Alles al geboekt"-flow (zie hieronder)
+- **Fase**: leid af uit commits, reflog, agenda of Claude-prompts. Bij
+  twijfel: de eerste fase in `phases`
+- **WBSO-waardig**: volgens `instructions`. Commits score > 6 → `wel`,
+  < 4 → vaak `niet`. Bij twijfel: `wel` met een voorzichtige reden.
+  `wbso_reason` in één korte zin, max 15 woorden
+- **Uren**: doe **geen** schatting uit losse pols. Gebruik alleen:
+  1. Het `/wbso <uren>` argument als dat is meegegeven
+  2. De duur van een eenduidig agenda-block dat overeenkomt met de
+     activiteit
+  3. Anders: laat 't veld open en vraag de gebruiker.
+  Tel commits niet om naar uren — code-volume zegt niks over
+  doorlooptijd, en RVO accepteert geen geschatte uren zonder bewijs.
 
 ## Stap 3: Toon voorstel en vraag bevestiging
 
@@ -190,16 +236,33 @@ Gebruik die alleen intern in API-calls.
 
 ### Voorstel: compact
 
-Eén regel context (alleen als nuttig), dan het kern-blok. WBSO-regel
-**altijd** aanwezig, dat is het hart van de skill.
+Eén regel context (alleen als nuttig), dan het kern-blok in twee
+zinnen — geen iconen, geen bullet-lijst. WBSO-regel **altijd**
+aanwezig, dat is het hart van de skill.
 
 ```
 <optionele één-regel context, alleen als update of als al iets staat>
 
-📁 **<project_title>**
-🔖 <fase>
-⏱️ <uren> uur
-<wbso_emoji> WBSO <wel|deels|niet> — <reden, max 15 woorden>
+<fase> op <project_title>.
+WBSO <wel|deels|niet>: <reden, max 15 woorden>.
+```
+
+Alleen als de uren-context **expliciet** uit `/wbso <uren>` argument
+of een agenda-block volgt, vermeld je die: `<uren> uur op <fase>`.
+Anders: laat de uren weg en vraag ze later expliciet.
+
+Voorbeeld zonder uren-context:
+
+```
+Classifier en routing op AI-assistent voor klantenservice.
+WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
+```
+
+Voorbeeld mét uren-context (agenda-block van 2u of `/wbso 2`):
+
+```
+2 uur op Classifier en routing (AI-assistent voor klantenservice).
+WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 ```
 
 Voorbeelden van wanneer een context-regel mag:
@@ -208,53 +271,54 @@ Voorbeelden van wanneer een context-regel mag:
 
 Anders: laat 'm weg.
 
-WBSO-emoji: `wel` → ✅ · `deels` → 🟡 · `niet` → ❌
+### Bevestiging als plain tekst (geen modal)
 
-### Skip wat geen vraag is
+Print het voorstel als plain tekst-bericht, gevolgd door een korte
+vraag op één regel. **Géén AskUserQuestion** — die modal verbergt de
+chat-geschiedenis en voelt zwaar voor een end-of-day boeking.
 
-Stel **geen** AskUserQuestion als er maar één plausibel antwoord is:
+Voorbeeld zonder uren-context:
 
-| Veld | Skip wanneer |
-|------|--------------|
-| Project | Slechts één actief project, óf commits/agenda eenduidig naar één project wijzen |
-| Fase | Slechts één fase past bij de commits/agenda |
-| Uren | `/wbso <uren>` argument meegegeven, óf agenda-block geeft eenduidige duur |
-| WBSO-inschatting | Commits hebben score > 7 én passen in `instructions` (default `wel`), óf score < 3 (default `niet`) |
+```
+Classifier en routing op AI-assistent voor klantenservice.
+WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 
-In die gevallen: zet de waarde gewoon in het voorstel-blok, sla door
-naar de bevestigings-vraag.
+Hoeveel uur heb je hieraan gewerkt?
+```
 
-### Bevestiging via preview
+Voorbeeld mét uren-context (`/wbso 2` of agenda-block):
 
-Eén `AskUserQuestion`. Gebruik het `preview` veld op de "Boek"-optie
-om de volledige proposal in de side-panel te tonen, zodat de chat
-zelf kort blijft. `header`: `Bevestigen`. Question: *"Boek dit?"*.
+```
+2 uur op Classifier en routing (AI-assistent voor klantenservice).
+WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 
-Drie opties (Claude Code voegt vanzelf een "Anders" toe voor vrije
-tekst):
+Registreer dit? (ja / pas aan / niet)
+```
 
-| Label | Description | Preview |
-|-------|-------------|---------|
-| Boek | Voorstel klopt | Volledig proposal-blok (zelfde tekst als hierboven) |
-| Pas aan | Project, fase, uren of inschatting wijzigen | "Selecteer wat je wil aanpassen" |
-| Niet boeken | Annuleer | "Geen boeking gemaakt" |
+Wacht op vrije tekst. Interpreteer ruim:
 
-Eerste optie is default — Enter = boeken. Geen "(Recommended)"
-suffix nodig in de label.
+- Een getal ("3", "4 uur", "half uurtje") → vul in en vraag dan
+  bevestiging opnieuw
+- "ja", "yes", "boek", "ok", "👍", lege regel → POST de boeking
+- "pas aan", "ander project", "andere uren", "minder uren", "niet WBSO" →
+  pas het voorstel direct aan op het genoemde veld en bevestig opnieuw
+- "nee", "niet", "annuleer", "skip" → geen boeking, stop
 
-Bij **Pas aan**: één tweede `AskUserQuestion`, max 4 opties uit
-*Ander project* / *Andere fase* / *Andere uren* / *Andere
-WBSO-inschatting* (skip "Andere uren" als argument meegegeven).
+Bij "pas aan" zonder specificering: vraag kort *"Wat moet anders —
+project, uren of WBSO-inschatting?"* als vrije tekst.
 
-Bij **Ander project**: top 3 actieve projecten als labels (Claude
-Code voegt "Anders" toe voor de rest). Bij **Andere uren**:
-*1 uur / 2 uur / 4 uur / 8 uur* (vervang er één door een
-context-getal als agenda dat hint).
+Bij vermeld project/uren: pas in één keer aan en toon nieuw voorstel.
 
-Beschrijvingen: alleen titels.
+### Wel modals voor expliciete keuzelijst
 
-✅ *"Update naar 8 uur op Automatische git commit WBSO scoring agent"*
-❌ *"Update naar 8 uur op kgwszv, fase Local changes & tunnel"*
+`AskUserQuestion` mag wél in twee gevallen, omdat er dan echt een
+gesloten lijst is om uit te kiezen:
+
+- **"Alles al geboekt"-pad**: max 3 actieve projecten + *"Ik ben klaar
+  voor vandaag"*
+- **"Geen signaal"-pad**: max 3 actieve projecten als suggesties
+
+In alle andere gevallen: plain tekst.
 
 ### Alles al geboekt + geen onbenutte activiteit
 
@@ -263,7 +327,7 @@ Beschrijvingen: alleen titels.
 `AskUserQuestion` met max 3 actieve projecten als labels +
 *Ik ben klaar voor vandaag*. Claude Code voegt zelf "Anders" toe.
 
-### Geen signaal? (commits, reflog, agenda allemaal leeg)
+### Geen signaal? (commits, reflog, agenda, Claude-sessies allemaal leeg)
 
 `AskUserQuestion` met max 3 actieve projecten als suggesties (label =
 titel, description = uren-stand). Claude Code voegt "Anders" toe voor
@@ -273,17 +337,13 @@ context. Bij Anders: vraag wat ze deden en synthetiseer.
 ## Stap 4: Boeken + alerts
 
 ```bash
-source ~/.config/wbso/config
-WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-https://portal.wbso.ai}"
-
-curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/time_entries" \
-  -H "Authorization: Bearer $WBSO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"time_entry\":{\"project\":\"<slug>\",\"date\":\"<YYYY-MM-DD>\",\"duration\":<hours>}}"
+wbso track-time --project "<slug>" --date "<YYYY-MM-DD>" --duration <hours>
 ```
 
+Voor een collega: voeg `--user-email collega@bedrijf.nl` toe.
+
 Status: `201` created; `200` updated (idempotent op user+project+date);
-`400` bad input; `401` key ongeldig (run setup-flow opnieuw); `403` user
+`400` bad input; `401` key ongeldig (doorloop setup-flow opnieuw); `403` user
 mag geen uren boeken op dit bedrijf; `404` user/project niet gevonden;
 `422` jaar afgesloten of validatiefout (geef letterlijk terug); `429`
 rate limit (60/min). HTTP-codes nooit naar gebruiker — vertaal naar
@@ -303,45 +363,52 @@ Tenzij er alerts zijn (zie hieronder).
 Lees `alerts` uit de respons en geef die kort terug. **Spreek over
 "onderbouwing"**, niet "evidence" — dat is interne API-naamgeving.
 
-**Iedere alert MOET via `AskUserQuestion` afgehandeld worden — nooit
-in vrije-tekst-vragen.** Geen open vragen waarbij de gebruiker zelf
-"geen onderbouwing nodig" of "ja klopt" moet typen. Altijd een
-keuzelijst.
+Alerts handel je af met **plain-tekst vragen**, niet met modal
+keuzelijsten. Gebruiker antwoordt vrij, skill interpreteert.
 
 ### `missing_evidence`
 
-Toon kort: *"Geen onderbouwing gekoppeld aan deze boeking."* Stel
-direct een `AskUserQuestion` met deze opties (in deze volgorde):
+Vraag direct in plain tekst:
 
-| Label | Beschrijving | Wanneer tonen |
-|-------|--------------|---------------|
-| Korte beschrijving toevoegen | Ik typ in 1-2 zinnen wat WBSO-waardig was | altijd |
-| Komt goed via mijn commits | Lokale commits worden vanzelf onderbouwing zodra ze gepushed/ingested zijn | alleen als er lokale commits zijn die nog niet in `commits` zitten |
-| Geen onderbouwing nodig | Accepteer en sluit af, RVO-risico bij mij | altijd |
+> *"Geen onderbouwing gekoppeld. Wat is het technisch knelpunt
+> waar je vandaag aan werkte en hoe heb je 't aangepakt?"*
 
-Bij "Korte beschrijving toevoegen": dán pas vraag je in vrije tekst
-*"In 1-2 zinnen — welk knelpunt, welke oplossing?"* en POST daarna
-naar `/evidence`.
+Komt de gebruiker met een echte onderbouwing → toets tegen
+`instructions` uit de context, POST naar `/evidence`.
+
+Heeft 'ie er geen zin in of zegt "skip" / "later" / "geen
+onderbouwing" → respecteer dat. Eén regel terug: *"Oké, dan geen
+onderbouwing. RVO-risico bij jou."*
+
+Valt het antwoord onder een niet-WBSO categorie ("design werk",
+"documentatie", "refactoring zonder knelpunt"), of mist het een
+technisch knelpunt of nieuwe oplossing? Vraag kort door — en als
+blijkt dat het werk écht niet WBSO-waardig was, bied dan aan om
+de boeking om te zetten naar `wbso: niet` of helemaal te
+verwijderen. Doe pas een POST naar `/evidence` als 't klopt.
 
 ### `over_8_hours`
 
-`AskUserQuestion`: *Ja, klopt* / *Nee, pas uren aan*.
+Plain tekst: *"8+ uur is een rode vlag bij RVO-controle. Klopt
+het echt dat je vandaag zoveel zuiver R&D-werk hebt gedaan, of
+moeten we 't bijstellen?"*
 
 ### `weekend`
 
-`AskUserQuestion`: *Ja, ik heb echt op die dag gewerkt* / *Nee, pas
-datum aan*.
+Plain tekst: *"Heb je echt op deze zaterdag/zondag gewerkt, of
+moet de datum aangepast?"*
 
 ### Onderbouwing toevoegen
 
 ```bash
-curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/evidence" \
-  -H "Authorization: Bearer $WBSO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"evidence\":{\"title\":\"<titel ≤80>\",\"description\":\"<beschrijving>\",\"starts_at\":\"<DATE>T09:00:00Z\",\"ends_at\":\"<DATE>T17:00:00Z\",\"all_day\":true,\"source\":\"wbso-skill\",\"external_id\":\"time_entry-<id>\"}}"
+wbso evidence \
+  --title "<titel ≤80>" \
+  --description "<beschrijving>" \
+  --date "<YYYY-MM-DD>" \
+  --external-id "time_entry-<id>"
 ```
 
-`external_id` = `time_entry-<id>` van de zojuist aangemaakte boeking,
+`--external-id time_entry-<id>` van de zojuist aangemaakte boeking,
 zodat een tweede aanroep idempotent is.
 
 ## Verwijderen
@@ -382,8 +449,7 @@ sub-selectie als er meer dan twee zijn.
 Per geselecteerde boeking — gebruik intern de id, maar toon die niet:
 
 ```bash
-curl -sS -X DELETE "$WBSO_API_BASE_URL/api/v1/compliance/time_entries/<id>" \
-  -H "Authorization: Bearer $WBSO_API_KEY"
+wbso untrack-time --id <id>
 ```
 
 Bevestig kort wat er is verwijderd, met titel en uren. Geen IDs en
