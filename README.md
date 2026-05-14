@@ -1,7 +1,68 @@
-# wbso-ai marketplace
+<p align="center">
+  <a href="https://wbso.ai"><img src="https://wbso.ai/logo.svg" alt="WBSO.ai" width="200"></a>
+</p>
 
-Claude Code plugins van WBSO.ai. Op dit moment één plugin: `wbso` —
-registreer WBSO-uren via een gesprek.
+<h1 align="center">Boek je WBSO-uren rechtstreeks vanuit Claude Code</h1>
+
+<p align="center">
+  Geen context-switch naar een urenformulier. Geen einde-van-de-dag-paniek. Geen gokken of je werk WBSO-waardig was.
+</p>
+
+<p align="center">
+  <strong>Eén plugin in Claude Code. Eén gesprek. Klaar.</strong>
+</p>
+
+---
+
+Developers houden niet van administratie. Maar voor de WBSO moet
+je wél bijhouden waar je elke dag aan werkt, beoordelen of het
+binnen je projectaanvraag valt, en het inschrijven in een tool.
+Te veel context-switch, dus blijft het liggen — of je betaalt
+een bemiddelaar 20-30% van je voordeel om 't voor je te doen.
+
+Deze plugin lost dat op. De skill draait in jouw werk-omgeving,
+leest waar je vandaag aan bezig was (commits + Claude-sessies,
+beide volledig lokaal), beoordeelt het tegen de RVO-criteria, en
+boekt het direct in op WBSO.ai.
+
+## Voorbeeld van een gesprek
+
+```
+> /wbso
+
+Welkom bij WBSO.ai 👋 Ik help je je WBSO-uren registreren via een
+kort gesprek. Je vertelt waar je vandaag aan hebt gewerkt, we kijken
+samen of het WBSO-waardig is, en ik boek het direct in.
+
+[ skill leest jouw commits + Claude-sessies van vandaag,
+  haalt jouw actieve WBSO-projecten op ]
+
+4 uur op Classifier en routing (AI-assistent voor klantenservice).
+WBSO wel: lerende classifier voor ticket-routing valt binnen
+R&D-fase Q2.
+
+Registreer dit? (ja / pas aan / niet)
+
+> ja
+
+✓ Geboekt — 4 uur op AI-assistent voor klantenservice.
+```
+
+Geen modal-dialogen, geen drop-downs, geen verplichte velden. Gewoon
+typen wat je hebt gedaan.
+
+## Waarom een Claude Code-skill?
+
+Agents zijn first-class burgers bij WBSO.ai. Onze compliance-API
+spreekt markdown met XML-tags zodat Claude 't direct kan lezen, de
+skill shipt z'n eigen CLI in `$PATH`, en alle vragen zijn vrije
+tekst — geen wrapper-laag, geen UI-omleiding.
+
+- 💬 **Conversational** — typ wat je deed, geen invulvelden
+- 🧠 **Met geheugen** — leest je `git log` van vandaag én je Claude-prompts, zodat je niet hoeft terug te denken wat je deed
+- 📚 **Transparant** — beoordeelt elke activiteit tegen de RVO-criteria en laat zien waarom 't wel of niet WBSO is
+- ⚡ **Snel** — gemiddeld één Enter-druk om een dag te boeken
+- 🔒 **Lokaal-first** — code, commit-messages en sessie-inhoud blijven op je laptop; alleen project + uren + datum gaan naar de API
 
 ## Installatie
 
@@ -10,38 +71,37 @@ claude plugins marketplace add wbso-ai/skill
 claude plugins install wbso@wbso-ai
 ```
 
-Daarna in Claude Code: `/wbso` of zeg "ik ga uren boeken".
+Daarna in Claude Code: `/wbso`.
 
-De eerste keer dat je `/wbso` runt vraagt de skill of je al een account
-hebt. Twee paden:
+De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
+**Heb je 'm nog niet?** Je maakt 'm aan via de skill zelf — naam,
+e-mail, bedrijf. Geen wurgcontracten, geen jaarbinding, gewoon een
+account in 60 seconden.
 
-- **Nieuw account**: naam, e-mail en bedrijfsnaam invullen → de skill
-  maakt een account aan, opent direct het stappenplan in je browser
-- **Bestaand account**: e-mail + API key plakken (aan te maken op
-  `https://portal.wbso.ai/companies/<bedrijf>/compliance/api_keys`)
+## Slash-commando's
 
-Beide paden slaan je gegevens op in `~/.config/wbso/config` (mode 600).
+| Commando | Wat het doet |
+|---|---|
+| `/wbso` | Registreer uren via een gesprek |
+| `/wbso:signup` | Maak een nieuw WBSO.ai-account aan |
+| `/wbso:auth` | Log in met een bestaande API key |
+| `/wbso:whoami` | Wie ben ik nu ingelogd als? |
+| `/wbso:logout` | Verwijder de lokale config |
 
-## In- en uitloggen
+Optioneel: `/wbso 4` om direct 4 uur voor te stellen op je
+voornaamste activiteit van vandaag.
 
-Vijf skill-commando's:
+## Privacy
 
-- `/wbso` — registreert uren (vraagt zelf om setup als je nog niet
-  ingelogd bent)
-- `/wbso:signup` — maakt een nieuw WBSO.ai-account aan en opent de
-  onboarding-wizard in je browser
-- `/wbso:auth` — opent de API keys-pagina in je browser, plak je
-  nieuwe key terug in de skill om in te loggen. Ook handig om van
-  account te wisselen
-- `/wbso:whoami` — laat zien onder welk account en bedrijf je nu
-  ingelogd bent
-- `/wbso:logout` — verwijdert `~/.config/wbso/config`
+WBSO.ai gelooft dat jouw broncode jouw eigendom is, niet ons
+trainingsmateriaal.
 
-Handmatig uitloggen kan ook met:
-
-```bash
-rm ~/.config/wbso/config
-```
+- **Lokaal**: `git log`, commit-messages, `git diff` en
+  Claude-sessieprompts blijven op je laptop
+- **Naar de API**: alleen project + uren + datum + (optioneel) een
+  korte handgeschreven onderbouwing
+- **Geen geheime data**: API key staat in `~/.config/wbso/config`
+  met mode 600
 
 ## Updaten
 
@@ -49,54 +109,27 @@ rm ~/.config/wbso/config
 claude plugins update wbso@wbso-ai
 ```
 
-Daarna Claude Code herstarten om de nieuwe versie op te pikken.
+Daarna Claude Code herstarten.
 
-## Wat zit erin
+## Geen account? Start hier
 
-### `wbso` skill
+Maak een account aan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden)
+of doe het rechtstreeks vanuit de skill met `/wbso:signup`. Vragen?
+Mail [paul@wbso.ai](mailto:paul@wbso.ai) of bel **085 333 26 15**.
 
-Conversational uren-registratie:
+WBSO.ai helpt Nederlandse softwarebedrijven hun WBSO-administratie
+te doen — zonder bemiddelaarstarieven van 20-30%, met een vaste
+prijs per project en gewoon volledige transparantie over wat we
+voor je doen.
 
-- Pakt actieve WBSO-projecten van je bedrijf via de compliance API
-- Stelt 2–3 gerichte vragen (project, technisch knelpunt, nieuwe
-  oplossing of bestaande tech)
-- Beoordeelt WBSO-waardigheid op basis van RVO-criteria — transparant,
-  met redenering erbij
-- Pakt `git reflog` én Claude Code sessies van vandaag op als
-  geheugensteun (vangt ook WIP-commits, abandoned experimenten en
-  conversaties zonder commits) — blijft volledig lokaal: alleen
-  project + uren + datum gaan naar de API
-- Bij `missing_evidence` alert: vraagt of je in 1–2 zinnen wil
-  vastleggen wat je gedaan hebt en koppelt dat als onderbouwing
+---
 
-### `wbso` CLI
+## Voor plugin-ontwikkelaars
 
-De skill praat met de WBSO.ai compliance API via een meegeleverde CLI
-in `bin/wbso`. Die staat automatisch in `$PATH` zodra de plugin actief
-is — je kunt 'm ook handmatig vanuit een shell aanroepen:
+<details>
+<summary>Lokaal testen, releasen en wisselen tussen versies</summary>
 
-```
-wbso signup --first-name X --last-name Y --email Z --company-name W
-wbso login --api-key Y
-wbso context [--date YYYY-MM-DD] [--user-email X]
-wbso track-time --project SLUG --date YYYY-MM-DD --duration N
-wbso untrack-time --id N
-wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID]
-```
-
-De CLI is een dunne bash-wrapper rond de HTTP-endpoints. Hij laadt
-zelf je config + eventuele dev-override en geeft de server-respons
-ongewijzigd door — `wbso context` retourneert markdown met XML-tags
-(geoptimaliseerd voor LLM-input), de andere commands retourneren JSON.
-
-## Privacy
-
-- Reflog, commit messages en Claude-sessieprompts blijven **lokaal** —
-  alleen project, uren en datum gaan naar de API
-- API key staat in `~/.config/wbso/config` met mode 600
-- Geen git history, broncode of sessie-inhoud naar de server
-
-## Repo structuur
+### Repo-structuur
 
 ```
 .claude-plugin/marketplace.json     # marketplace metadata
@@ -106,13 +139,13 @@ packages/
     ├── bin/wbso                    # CLI (bash, in $PATH bij activatie)
     └── skills/
         ├── wbso/SKILL.md           # uren registreren
-        ├── signup/SKILL.md         # /wbso:signup — account aanmaken
-        ├── auth/SKILL.md           # /wbso:auth — inloggen
-        ├── whoami/SKILL.md         # /wbso:whoami — wie ben ik
-        └── logout/SKILL.md         # /wbso:logout — uitloggen
+        ├── signup/SKILL.md         # account aanmaken
+        ├── auth/SKILL.md           # inloggen
+        ├── whoami/SKILL.md         # wie ben ik
+        └── logout/SKILL.md         # uitloggen
 ```
 
-## Lokaal testen
+### Lokaal testen
 
 ```bash
 git clone git@github.com:wbso-ai/skill.git
@@ -123,9 +156,8 @@ claude --plugin-dir ./packages/wbso  # eenmalig test, geen install
 
 ### Tegen een lokale server testen
 
-Standaard wijst de skill naar `https://portal.wbso.ai`. Voor lokale
-ontwikkeling kun je dit overrulen met een `.env.local` in je config-
-map:
+Standaard wijst de skill naar `https://portal.wbso.ai`. Override
+met een `.env.local` in je config-map:
 
 ```bash
 mkdir -p ~/.config/wbso
@@ -133,87 +165,50 @@ cp .env.local.example ~/.config/wbso/.env.local
 # pas WBSO_API_BASE_URL aan naar bv. http://localhost:3000
 ```
 
-De `wbso` CLI sourcet die file automatisch bij elke aanroep. De URL
-vloeit door naar de config die na signup geschreven wordt, dus je
-hoeft 'm niet steeds opnieuw te zetten. Andere gebruikers die de
-plugin via de marketplace installeren krijgen de file niet, dus blijft
-dit een dev-only override.
+De `wbso` CLI sourcet die file bij elke aanroep. De URL vloeit door
+naar de config die na signup geschreven wordt.
 
-## Releasen
-
-Een nieuwe versie publiceren doe je met:
+### Releasen
 
 ```bash
 bin/release
 ```
 
-Dat script:
+Berekent de nieuwe versie op basis van commit-count (`1.<commit-count>`),
+bumpt `version` in `packages/wbso/.claude-plugin/plugin.json`, maakt
+een release-commit + tag (`v1.N`), pusht naar `origin/main`. Zonder
+expliciete `version` in `plugin.json` zou elke commit als nieuwe
+versie tellen — daarom een bewuste bump.
 
-1. Berekent de nieuwe versie op basis van het aantal commits
-   (`1.<commit-count>`)
-2. Bumpt `version` in `packages/wbso/.claude-plugin/plugin.json`
-3. Maakt een release-commit + git-tag (`v1.N`)
-4. Pusht alles naar `origin/main`
-
-Claude Code ziet die versie-bump als nieuwe release. Gebruikers
-pakken hem op met:
+### Wisselen tussen GitHub-versie en lokale dev-versie
 
 ```bash
-claude plugins update wbso@wbso-ai
-```
+# Eenmalig: marketplace registreren
+claude plugins marketplace add ~/Documents/skill
 
-### Waarom een expliciete `version`?
+# Switch naar lokaal (pikt elke wijziging direct op)
+claude plugins uninstall wbso@wbso-ai
+claude plugins install wbso@wbso-ai-local
 
-Als `version` in `plugin.json` staat krijgen gebruikers pas een
-update zodra jij dat veld bumpt. Zonder `version` zou elke commit op
-deze repo als nieuwe versie tellen (gebruikt de commit-SHA), wat
-ruis oplevert voor README-tweaks of CI-fixes.
-
-## Wisselen tussen GitHub-versie en lokale versie
-
-Je kunt de plugin op twee manieren installeren:
-
-- **GitHub-versie** (`wbso@wbso-ai`) — stabiel, update via
-  `claude plugins update`
-- **Lokale versie** (`wbso@wbso-ai-local`) — pakt elke wijziging in
-  `~/Documents/skill` direct op, handig voor development
-
-Met `claude plugins list` zie je welke geïnstalleerd staan en in welke
-scope (`user` = overal, `local` = alleen in huidige map). Je herkent
-ze aan de suffix achter `@`.
-
-### Overstappen naar de GitHub-versie
-
-```bash
+# Of terug naar GitHub
 claude plugins uninstall wbso@wbso-ai-local --scope local
 claude plugins install wbso@wbso-ai
 ```
 
-### Overstappen naar de lokale versie
+Met `claude plugins list` zie je welke actief is. Updaten van de
+lokale versie = `git pull` in `~/Documents/skill`, Claude Code
+herstarten.
 
-Eerst de marketplace registreren (eenmalig):
+### CLI vanuit een gewone shell gebruiken
 
-```bash
-claude plugins marketplace add ~/Documents/skill
-```
-
-Daarna installeren:
-
-```bash
-claude plugins uninstall wbso@wbso-ai
-claude plugins install wbso@wbso-ai-local
-```
-
-Updaten = `git pull` in `~/Documents/skill`. Claude Code herstarten
-om de wijzigingen op te pikken.
-
-### Allebei tegelijk geïnstalleerd?
-
-Verwarrend, want dan kan onduidelijk zijn welke versie actief is.
-Disable de versie die je niet wilt:
+De `wbso` CLI staat in `$PATH` zodra de plugin actief is. Wil je 'm
+ook buiten Claude Code aanroepen:
 
 ```bash
-claude plugins disable wbso@wbso-ai-local
-# of
-claude plugins disable wbso@wbso-ai
+ln -s ~/Documents/skill/packages/wbso/bin/wbso ~/.local/bin/wbso
 ```
+
+Subcommands: `login`, `context`, `whoami`, `track-time`,
+`untrack-time`, `evidence`. Run `wbso help` voor de details.
+
+</details>
