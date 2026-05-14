@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://wbso.ai"><img src="https://wbso.ai/logo.svg" alt="WBSO.ai" width="200"></a>
+  <a href="https://wbso.ai"><img src="./assets/logo.svg" alt="WBSO.ai" width="160"></a>
 </p>
 
 <h1 align="center">Boek je WBSO-uren rechtstreeks vanuit Claude Code</h1>
