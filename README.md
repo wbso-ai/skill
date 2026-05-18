@@ -73,7 +73,13 @@ claude plugins marketplace add wbso-ai/skill
 claude plugins install wbso@wbso-ai
 ```
 
-Daarna in Claude Code: `/wbso`.
+Gebruik daarna de slash-commands in Claude Code:
+
+```text
+/wbso
+/wbso:whoami
+/wbso:auth
+```
 
 ### Codex
 
@@ -84,7 +90,7 @@ codex
 ```
 
 Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
-nieuwe thread. Gebruik de skill expliciet met `$`:
+nieuwe thread. Gebruik de skills expliciet met `$`:
 
 ```text
 $wbso registreer mijn WBSO-uren van vandaag
@@ -105,17 +111,17 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill | Claude Code | Wat het doet |
-|---|---|---|
-| `wbso` | `/wbso` | Registreer uren via een gesprek |
-| `signup` | `/wbso:signup` | Maak een nieuw WBSO.ai-account aan |
-| `auth` | `/wbso:auth` | Log in met een bestaande API key |
-| `whoami` | `/wbso:whoami` | Wie ben ik nu ingelogd als? |
-| `logout` | `/wbso:logout` | Verwijder de lokale config |
+| Skill | Claude Code | Codex | Wat het doet |
+|---|---|---|---|
+| `wbso` | `/wbso` | `$wbso` | Registreer uren via een gesprek |
+| `signup` | `/wbso:signup` | `$signup` | Maak een nieuw WBSO.ai-account aan |
+| `auth` | `/wbso:auth` | `$auth` | Log in met een bestaande API key |
+| `whoami` | `/wbso:whoami` | `$whoami` | Wie ben ik nu ingelogd als? |
+| `logout` | `/wbso:logout` | `$logout` | Verwijder de lokale config |
 
-Optioneel: `/wbso 4` in Claude Code, of een urenargument bij expliciete
-Codex skill-invocation, om direct 4 uur voor te stellen op je
-voornaamste activiteit van vandaag.
+Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
+Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
+vandaag.
 
 ## Privacy
 
