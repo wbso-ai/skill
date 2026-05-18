@@ -77,20 +77,8 @@ Daarna in Claude Code: `/wbso`.
 
 ### Codex
 
-Vanuit GitHub:
-
 ```bash
 codex plugin marketplace add wbso-ai/skill
-codex
-/plugins
-```
-
-Voor lokaal testen vanuit deze repo:
-
-```bash
-git clone git@github.com:wbso-ai/skill.git
-cd skill
-codex plugin marketplace add .
 codex
 /plugins
 ```
@@ -108,14 +96,6 @@ Of vraag het in gewone taal:
 
 ```text
 Gebruik WBSO.ai om mijn WBSO-uren van vandaag te registreren.
-```
-
-Codex cachet geïnstalleerde plugins. Als je lokaal aan de plugin werkt
-en Codex blijft een oude versie gebruiken, clear de cache en installeer
-opnieuw via `/plugins`:
-
-```bash
-rm -rf ~/.codex/plugins/cache/wbso-ai/wbso
 ```
 
 De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
@@ -218,6 +198,17 @@ cd skill
 claude plugins validate ./packages/wbso
 claude --plugin-dir ./packages/wbso  # eenmalig test, geen install
 codex plugin marketplace add .
+codex
+/plugins
+```
+
+Installeer daarna `wbso` vanuit de lokale WBSO.ai marketplace. Codex
+cachet geïnstalleerde plugins. Als Codex na lokale wijzigingen een oude
+versie blijft gebruiken, clear de cache en installeer opnieuw via
+`/plugins`:
+
+```bash
+rm -rf ~/.codex/plugins/cache/wbso-ai/wbso
 ```
 
 ### Tegen een lokale server testen
