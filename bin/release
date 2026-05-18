@@ -16,7 +16,18 @@ fi
 
 git fetch --tags --quiet
 
-manifest="packages/wbso/.claude-plugin/plugin.json"
+manifests=(
+  "packages/wbso/.claude-plugin/plugin.json"
+  "packages/wbso/.codex-plugin/plugin.json"
+)
+
+for manifest in "${manifests[@]}"; do
+  if [[ ! -f "$manifest" ]]; then
+    echo "Manifest ontbreekt: $manifest" >&2
+    exit 1
+  fi
+done
+
 commit_count="$(git rev-list --count HEAD)"
 new_minor=$((commit_count + 1))
 new_version="1.${new_minor}"
@@ -27,11 +38,13 @@ if git rev-parse "${tag}" >/dev/null 2>&1; then
   exit 1
 fi
 
-tmp="$(mktemp)"
-jq --arg v "${new_version}" '.version = $v' "${manifest}" > "${tmp}"
-mv "${tmp}" "${manifest}"
+for manifest in "${manifests[@]}"; do
+  tmp="$(mktemp)"
+  jq --arg v "${new_version}" '.version = $v' "${manifest}" > "${tmp}"
+  mv "${tmp}" "${manifest}"
+done
 
-git add "${manifest}"
+git add "${manifests[@]}"
 git commit -m "Release ${tag}"
 git tag -a "${tag}" -m "Release ${tag}"
 git push origin main

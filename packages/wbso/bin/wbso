@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wbso — thin CLI wrapper voor de WBSO.ai compliance API.
 #
-# Subcommands: signup, login, context, book, book-delete, evidence
+# Subcommands: signup, login, context, track-time, untrack-time, evidence, whoami
 # Config wordt geladen uit ~/.config/wbso/.env.local (optionele dev-override)
 # en ~/.config/wbso/config (api key, email, base url).
 
@@ -106,7 +106,7 @@ cmd_signup() {
     --data-urlencode "first_name=$ARG_first_name" \
     --data-urlencode "last_name=$ARG_last_name" \
     --data-urlencode "company_name=$ARG_company_name" \
-    --data-urlencode "utm_source=claude_code" \
+    --data-urlencode "utm_source=agent_skill" \
     --data-urlencode "utm_medium=skill" \
     "$WBSO_API_BASE_URL/signup")
 
@@ -199,6 +199,7 @@ cmd_context() {
 append_local_signals() {
   append_git_commits_today
   append_claude_sessions_today
+  append_codex_sessions_today
 }
 
 append_git_commits_today() {
@@ -263,6 +264,63 @@ for line in open(sys.argv[1], errors="replace"):
 PY
   done
   echo "</claude_user_prompts_today>"
+}
+
+append_codex_sessions_today() {
+  local today
+  today="$(date +%F)"
+
+  local dir="$HOME/.codex/sessions/${today:0:4}/${today:5:2}/${today:8:2}"
+  [ -d "$dir" ] || return 0
+
+  local files
+  files=$(find "$dir" -maxdepth 1 -name '*.jsonl' -newermt "$today" 2>/dev/null)
+  [ -z "$files" ] && return 0
+
+  local prompts
+  prompts=$(echo "$files" | while read -r f; do
+    [ -f "$f" ] || continue
+    python3 - "$(pwd)" "$f" <<'PY'
+import json, sys
+
+target_cwd, path = sys.argv[1], sys.argv[2]
+cwd = None
+messages = []
+
+for line in open(path, errors="replace"):
+    try:
+        d = json.loads(line)
+    except Exception:
+        continue
+
+    if d.get("type") == "session_meta":
+        cwd = (d.get("payload") or {}).get("cwd")
+        continue
+
+    payload = d.get("payload") or {}
+    if d.get("type") == "event_msg" and payload.get("type") == "user_message":
+        text = (payload.get("message") or "").strip()
+        if text:
+            messages.append(text)
+
+if cwd != target_cwd:
+    sys.exit(0)
+
+for text in messages:
+    print("-", " ".join(text.split())[:500])
+PY
+  done)
+
+  [ -z "$prompts" ] && return 0
+
+  echo
+  echo "<codex_user_prompts_today cwd=\"$(pwd)\">"
+  echo "Alleen prompts die de gebruiker zelf naar Codex stuurde in deze"
+  echo "repository vandaag (geen assistant-antwoorden, geen tool-calls)."
+  echo "Gebruik dit als signaal voor waar de gebruiker vandaag mee bezig was."
+  echo
+  echo "$prompts"
+  echo "</codex_user_prompts_today>"
 }
 
 cmd_track_time() {

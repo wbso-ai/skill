@@ -1,10 +1,17 @@
 ---
 name: signup
-user-invocable: true
-description: Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik `/wbso:auth`.
+description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik de auth skill.'
 ---
 
 # Account aanmaken op WBSO.ai
+
+Claude Code zet plugin-root `bin/` in `$PATH`, dus daar werkt `wbso`
+direct. Codex gebruikt de skill-local wrapper `scripts/wbso`.
+
+```bash
+WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
+```
 
 Stuur eerst een korte uitleg en vraag alle vier de velden in één
 plain-tekst bericht (geen modal, geen losse vragen — anders voelt 't
@@ -24,7 +31,7 @@ pas specifiek dat ene veld opnieuw.
 ## Aanmaken via de CLI
 
 ```bash
-wbso signup \
+"$WBSO_CLI" signup \
   --first-name "<VOORNAAM>" \
   --last-name "<ACHTERNAAM>" \
   --email "<EMAIL>" \
@@ -44,8 +51,8 @@ wbso signup \
 ```
 
 Bij `422` toont het response-body een `error`-veld. Laat dat aan de
-gebruiker zien. Komt het neer op "bestaat al"? Schakel over naar
-`/wbso:auth` zodat de gebruiker met z'n bestaande key inlogt.
+gebruiker zien. Komt het neer op "bestaat al"? Schakel over naar de
+gebundelde `auth` skill zodat de gebruiker met z'n bestaande key inlogt.
 
 ## Browser openen voor profiel
 
@@ -61,14 +68,14 @@ Leg uit waarom 't nodig is, vraag dán pas toestemming:
 
 Bij "ja" / "ok" / lege regel:
 
-Voeg `utm_source=claude` toe aan het `return_to`-pad in `login_url`
-zodat de portal weet dat de gebruiker uit Claude komt (dat triggert
-o.a. een persoonlijke welkomsttitel). Concreet: vervang
+Voeg `utm_source=agent_skill` toe aan het `return_to`-pad in `login_url`
+zodat de portal weet dat de gebruiker uit een AI-agent komt. Concreet:
+vervang
 `return_to=%2Fsignup%2Fapplication` door
-`return_to=%2Fsignup%2Fapplication%3Futm_source%3Dclaude`.
+`return_to=%2Fsignup%2Fapplication%3Futm_source%3Dagent_skill`.
 
 ```bash
-url="<login_url met utm_source=claude in return_to>"
+url="<login_url met utm_source=agent_skill in return_to>"
 xdg-open "$url" 2>/dev/null || open "$url" 2>/dev/null || \
   echo "Open zelf: $url"
 ```
@@ -78,7 +85,7 @@ Direct na het openen, plain tekst:
 > *"Rond de wizard af in je browser — daarna kun je hier verder met
 > uren registreren."*
 
-Bij "nee" / "later": toon dezelfde URL (mét `utm_source=claude` in
+Bij "nee" / "later": toon dezelfde URL (mét `utm_source=agent_skill` in
 `return_to`) als platte tekst zodat de gebruiker 'm zelf kan openen,
 en stuur dezelfde afmaak-melding.
 
@@ -89,8 +96,10 @@ context` tot er minstens één `<project slug=...>` blok in de respons
 zit (max ~2 min, 4s per poging):
 
 ```bash
+WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
 for i in $(seq 1 30); do
-  wbso context > /tmp/wbso-ctx.md
+  "$WBSO_CLI" context > /tmp/wbso-ctx.md
   grep -q '<project slug=' /tmp/wbso-ctx.md && break
   sleep 4
 done
@@ -98,5 +107,5 @@ cat /tmp/wbso-ctx.md
 ```
 
 Zie je projecten? Noem ze kort op en check of de gebruiker uren wil
-boeken via `/wbso`. Blijft het leeg na 2 minuten? Vraag of er hulp
+boeken via de `wbso` skill. Blijft het leeg na 2 minuten? Vraag of er hulp
 nodig is in het stappenplan.

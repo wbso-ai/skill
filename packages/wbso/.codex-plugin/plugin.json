@@ -1,0 +1,26 @@
+{
+  "name": "wbso",
+  "version": "1.6",
+  "description": "Registreer WBSO-uren via een gesprek. Stelt 2-3 gerichte vragen, beoordeelt WBSO-waardigheid op basis van RVO-criteria (technisch nieuw, knelpunt, onzekerheid), en boekt direct via de WBSO.ai compliance API. Verwerkt alerts (missing_evidence, over_8_hours, weekend) en biedt aan onderbouwing toe te voegen.",
+  "author": {
+    "name": "WBSO.ai",
+    "url": "https://wbso.ai"
+  },
+  "homepage": "https://wbso.ai",
+  "repository": "https://github.com/wbso-ai/skill",
+  "keywords": ["wbso", "time-tracking", "compliance", "rvo"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "WBSO.ai",
+    "shortDescription": "Registreer WBSO-uren vanuit Codex",
+    "longDescription": "Registreer WBSO-uren via een kort gesprek, beoordeel werk tegen RVO-criteria en boek direct via de WBSO.ai compliance API.",
+    "developerName": "WBSO.ai",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://wbso.ai",
+    "defaultPrompt": [
+      "Gebruik WBSO.ai om mijn WBSO-uren van vandaag te registreren.",
+      "Gebruik WBSO.ai om te checken onder welk account ik ben ingelogd."
+    ]
+  }
+}

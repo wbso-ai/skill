@@ -1,13 +1,12 @@
 ---
 name: logout
-user-invocable: true
-description: Log uit van WBSO.ai door de lokale config te verwijderen. Gebruik wanneer de gebruiker wil uitloggen, van account wil wisselen, of zegt "ik wil uitloggen".
+description: 'Log uit van WBSO.ai door de lokale config te verwijderen. Gebruik wanneer de gebruiker wil uitloggen, van account wil wisselen, of zegt "ik wil uitloggen".'
 ---
 
 # Uitloggen van WBSO.ai
 
 Verwijder de lokale config (`~/.config/wbso/config`) zodat de
-volgende `/wbso` opnieuw vraagt om een API key.
+volgende wbso-flow opnieuw vraagt om een API key.
 
 ## Stap 1: Bevestig
 
@@ -27,8 +26,8 @@ rm -f "$HOME/.config/wbso/config" && echo "Uitgelogd"
 
 Bevestig kort:
 
-> *"Uitgelogd. Run `/wbso:auth` om opnieuw in te loggen, of `/wbso`
-> om meteen een nieuw account aan te maken."*
+> *"Uitgelogd. Gebruik de auth skill om opnieuw in te loggen, of de
+> wbso skill om meteen een nieuw account aan te maken."*
 
 ## Geen config? Niets te doen
 

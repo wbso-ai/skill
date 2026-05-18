@@ -1,0 +1,20 @@
+{
+  "name": "wbso-ai",
+  "interface": {
+    "displayName": "WBSO.ai"
+  },
+  "plugins": [
+    {
+      "name": "wbso",
+      "source": {
+        "source": "local",
+        "path": "./packages/wbso"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

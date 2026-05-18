@@ -1,7 +1,6 @@
 ---
 name: wbso
-user-invocable: true
-description: Registreer WBSO-uren via een gesprek. Gebruik wanneer de gebruiker uren wil schrijven, vraagt naar WBSO-uren registratie, of zegt "ik ga uren boeken". Optioneel: `/wbso <uren>` om direct dat aantal uren voor te stellen.
+description: 'Registreer WBSO-uren via een gesprek. Gebruik wanneer de gebruiker uren wil schrijven, vraagt naar WBSO-uren registratie, of zegt "ik ga uren boeken". Optioneel: geef een urenargument mee om direct dat aantal uren voor te stellen.'
 ---
 
 # WBSO uren registreren
@@ -9,30 +8,49 @@ description: Registreer WBSO-uren via een gesprek. Gebruik wanneer de gebruiker 
 Help de developer hun WBSO-uren te boeken via een kort gesprek. Doe een
 voorstel op basis van wat je weet, vraag pas door waar het echt nodig is.
 
-## AskUserQuestion regels (lezen voordat je 'm aanroept)
+## Vraagstijl
 
-De tool weigert calls die buiten de schema-limieten vallen. Houd je aan:
+Gebruik standaard plain tekst. Dat werkt in Claude Code, Codex en andere
+Agent Skills-clients en houdt de flow snel.
+
+Als de client een gestructureerde vraag/keuzelijst ondersteunt, gebruik die
+alleen voor echte gesloten lijsten. Houd je dan aan:
 
 - **Max 4 opties per vraag** — meer betekent: groepeer ("Iets aanpassen")
   en stel daarna een vervolgvraag
-- **Geen handmatige "Anders"-optie** — Claude Code voegt die automatisch toe
+- **Geen handmatige "Anders"-optie** als de client die automatisch toevoegt
 - **`header` ≤ 12 tekens** (bv. `"Boeking"`, niet `"Boeking bevestigen"`)
 - **`label` 1-5 woorden** — kort, scanbaar
 - **`description` is uitleg** — niet de keuze herhalen
 
 ## Argument: snelboeken
 
-Als de gebruiker `/wbso <uren>` typte (bijv. `/wbso 4`), gebruik dat
-uren-getal als totaal voor de dag op het voorgestelde project. Sla in
-Stap 3 de "Andere uren"-vraag over — vraag alleen het project + de
-WBSO-bevestiging.
+Als de gebruiker een urenargument meegaf (bijv. `/wbso 4` in Claude Code
+of `4` bij expliciete skill-invocation in Codex), gebruik dat uren-getal
+als totaal voor de dag op het voorgestelde project. Sla in Stap 3 de
+"Andere uren"-vraag over — vraag alleen het project + de WBSO-bevestiging.
 
 Als er geen argument is meegegeven, volg de normale flow.
 
 ## Werken via de `wbso` CLI
 
-Deze skill shipt een `wbso` CLI in `bin/` van de plugin — die staat
-automatisch in `$PATH` zodra de plugin actief is. Alle API-calls gaan
+Deze plugin shipt de echte `wbso` CLI in `bin/` van de plugin. Claude
+Code zet plugin-root `bin/` in `$PATH`, dus daar kun je `wbso` direct
+aanroepen.
+
+Codex zet plugin-root `bin/` niet gegarandeerd in `$PATH`. Voor Codex
+heeft deze skill daarom een `scripts/wbso` wrapper naast `SKILL.md`.
+Gebruik `wbso` als die in `$PATH` staat; gebruik anders de
+skill-local wrapper als `$WBSO_CLI`:
+
+```bash
+WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
+"$WBSO_CLI" context
+```
+
+In de snippets hieronder betekent `wbso` dus: `wbso` uit `$PATH`, of
+`"$WBSO_CLI"` als je de fallback moest gebruiken. Alle API-calls gaan
 via deze CLI; geen inline curls meer. De CLI laadt zelf
 `~/.config/wbso/.env.local` (dev-override) en `~/.config/wbso/config`
 (api-key + email), dus je hoeft niks te sourcen.
@@ -71,10 +89,9 @@ niet meer apart te doen.
 
 ### Setup-flow (alleen bij `not_logged_in`)
 
-Stuur in één plain-tekst-bericht (geen AskUserQuestion) een warme
-introductie en de eerste vraag. AskUserQuestion zou de tekst eroverheen
-duwen, dus voor de openingsbeurt is vrije tekst beter — Claude leest
-het antwoord van de gebruiker dan natuurlijk:
+Stuur in één plain-tekst-bericht een warme introductie en de eerste vraag.
+Voor de openingsbeurt is vrije tekst beter; de agent leest het antwoord van
+de gebruiker dan natuurlijk:
 
 > *"Welkom bij WBSO.ai 👋 Ik help je je WBSO-uren registreren via een
 > kort gesprek. Je vertelt waar je vandaag aan hebt gewerkt, we kijken
@@ -92,17 +109,16 @@ Bij twijfel: vraag kort terug.
 
 #### Bestaand account
 
-Delegeer naar de `/wbso:auth` skill — die opent de API keys-pagina
-in de browser, vraagt de gebruiker de key te plakken, en slaat 'm op
-in de config. Run daarna `wbso context` opnieuw zodra de auth-skill
-klaar is.
+Volg de gebundelde `auth` skill — die opent de API keys-pagina in de
+browser, vraagt de gebruiker de key te plakken, en slaat 'm op in de
+config. Run daarna `wbso context` opnieuw zodra de auth-flow klaar is.
 
 #### Nieuw account aanmaken
 
-Delegeer naar de `/wbso:signup` skill — die vraagt naam/email/bedrijf
-in één keer, maakt het account aan, opent de browser voor de wizard,
-en wacht tot de eerste projecten aangemaakt zijn. Run daarna
-`wbso context` opnieuw.
+Volg de gebundelde `signup` skill — die vraagt naam/email/bedrijf in één
+keer, maakt het account aan, opent de browser voor de wizard, en wacht
+tot de eerste projecten aangemaakt zijn. Run daarna `wbso context`
+opnieuw.
 
 #### Config schrijven
 
@@ -151,18 +167,22 @@ Velden in de respons:
 
 ### Lokale signalen — al meegenomen door `wbso context`
 
-`wbso context` plakt automatisch twee extra XML-secties onder de
-server-respons als je cwd een git-repo is óf Claude Code sessies van
-vandaag heeft:
+`wbso context` plakt automatisch lokale XML-secties onder de
+server-respons als je cwd een git-repo is of als er agent-sessies van
+vandaag zijn:
 
 - `<git_commits_today>` — commits van vandaag met SHA, auteur,
   tijdstip, full message en bestand-diffstat
 - `<claude_user_prompts_today>` — alleen door de gebruiker zelf
   ingetypte prompts uit Claude Code sessies van vandaag (geen
   assistant-antwoorden, geen tool-calls)
+- `<codex_user_prompts_today>` — alleen door de gebruiker zelf
+  ingetypte prompts uit Codex sessies van vandaag in deze repository
+  (geen assistant-antwoorden, geen tool-calls)
 
 Blijft volledig lokaal — `wbso context` haalt server-data via HTTPS,
-lokale signalen leest 'ie uit `git log` en `~/.claude/projects/`.
+lokale signalen leest 'ie uit `git log`, `~/.claude/projects/` en
+`~/.codex/sessions/`.
 Alleen jouw uiteindelijke conclusie (project + uren + datum + evt.
 onderbouwing) gaat naar de API.
 
@@ -182,7 +202,7 @@ Zo voorkomt de gebruiker een verrassing achteraf.
 
 ## Stap 2: Synthese — kies wat nog NIET geboekt is
 
-De gebruiker heeft `/wbso` ingetypt om iets te boeken dat er nog niet
+De gebruiker heeft deze skill gestart om iets te boeken dat er nog niet
 staat. Vermijd dus voorstellen die het al-geboekte herhalen.
 
 **Doe altijd een gok, ook bij twijfel.** Stel nooit losse vragen
@@ -194,20 +214,20 @@ Vorm een voorstel:
 - **Project**: kies een actief project uit `projects` waarop nog
   ruimte is. Volgorde van voorkeur:
   1. Project waarop activiteit (commits, reflog branch-namen, agenda,
-     Claude-sessieprompts) wijst en dat **nog niet vandaag is geboekt**
+     agent-sessieprompts) wijst en dat **nog niet vandaag is geboekt**
   2. Een ander actief project waar activiteit op zit, ook al staan er
      al uren — propose dan een **update** naar een hoger totaal
   3. Bij twijfel: het eerste actieve project waar vandaag nog geen
      uren op staan (alfabetisch op `title`)
   4. Pas als alles al geboekt staat én er geen onbenutte activiteit
      is: pivot naar de "Alles al geboekt"-flow (zie hieronder)
-- **Fase**: leid af uit commits, reflog, agenda of Claude-prompts. Bij
+- **Fase**: leid af uit commits, reflog, agenda of agent-prompts. Bij
   twijfel: de eerste fase in `phases`
 - **WBSO-waardig**: volgens `instructions`. Commits score > 6 → `wel`,
   < 4 → vaak `niet`. Bij twijfel: `wel` met een voorzichtige reden.
   `wbso_reason` in één korte zin, max 15 woorden
 - **Uren**: doe **geen** schatting uit losse pols. Gebruik alleen:
-  1. Het `/wbso <uren>` argument als dat is meegegeven
+  1. Het urenargument als dat is meegegeven
   2. De duur van een eenduidig agenda-block dat overeenkomt met de
      activiteit
   3. Anders: laat 't veld open en vraag de gebruiker.
@@ -229,7 +249,7 @@ WBSO en zitten niet in het voorstel"*, niet *"die boek ik niet"*.
 
 ### Geen slug, geen ID, geen HTTP-codes in UI
 
-Alle gebruiker-zichtbare tekst (voorstel, AskUserQuestion-labels,
+Alle gebruiker-zichtbare tekst (voorstel, keuzelijst-labels,
 descriptions, previews, na-bevestigingen) gebruikt **alleen
 projecttitels**. Geen slugs, time_entry-IDs of HTTP-statuscodes.
 Gebruik die alleen intern in API-calls.
@@ -247,8 +267,8 @@ aanwezig, dat is het hart van de skill.
 WBSO <wel|deels|niet>: <reden, max 15 woorden>.
 ```
 
-Alleen als de uren-context **expliciet** uit `/wbso <uren>` argument
-of een agenda-block volgt, vermeld je die: `<uren> uur op <fase>`.
+Alleen als de uren-context **expliciet** uit een urenargument of een
+agenda-block volgt, vermeld je die: `<uren> uur op <fase>`.
 Anders: laat de uren weg en vraag ze later expliciet.
 
 Voorbeeld zonder uren-context:
@@ -258,7 +278,7 @@ Classifier en routing op AI-assistent voor klantenservice.
 WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 ```
 
-Voorbeeld mét uren-context (agenda-block van 2u of `/wbso 2`):
+Voorbeeld mét uren-context (agenda-block van 2u of urenargument `2`):
 
 ```
 2 uur op Classifier en routing (AI-assistent voor klantenservice).
@@ -271,11 +291,11 @@ Voorbeelden van wanneer een context-regel mag:
 
 Anders: laat 'm weg.
 
-### Bevestiging als plain tekst (geen modal)
+### Bevestiging als plain tekst
 
 Print het voorstel als plain tekst-bericht, gevolgd door een korte
-vraag op één regel. **Géén AskUserQuestion** — die modal verbergt de
-chat-geschiedenis en voelt zwaar voor een end-of-day boeking.
+vraag op één regel. Gebruik hier geen modal of keuzelijst; die verbergt
+de chat-geschiedenis en voelt zwaar voor een end-of-day boeking.
 
 Voorbeeld zonder uren-context:
 
@@ -286,7 +306,7 @@ WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 Hoeveel uur heb je hieraan gewerkt?
 ```
 
-Voorbeeld mét uren-context (`/wbso 2` of agenda-block):
+Voorbeeld mét uren-context (urenargument `2` of agenda-block):
 
 ```
 2 uur op Classifier en routing (AI-assistent voor klantenservice).
@@ -309,10 +329,11 @@ project, uren of WBSO-inschatting?"* als vrije tekst.
 
 Bij vermeld project/uren: pas in één keer aan en toon nieuw voorstel.
 
-### Wel modals voor expliciete keuzelijst
+### Wel keuzelijsten voor expliciete keuzes
 
-`AskUserQuestion` mag wél in twee gevallen, omdat er dan echt een
-gesloten lijst is om uit te kiezen:
+Een gestructureerde vraag of keuzelijst mag wél in twee gevallen, als
+de client die ondersteunt. Als dat niet beschikbaar is, stel dezelfde
+vraag als plain tekst:
 
 - **"Alles al geboekt"-pad**: max 3 actieve projecten + *"Ik ben klaar
   voor vandaag"*
@@ -324,15 +345,17 @@ In alle andere gevallen: plain tekst.
 
 > Vandaag al <X> uur geboekt. Geen nieuwe activiteit. Wat nu?
 
-`AskUserQuestion` met max 3 actieve projecten als labels +
-*Ik ben klaar voor vandaag*. Claude Code voegt zelf "Anders" toe.
+Keuzelijst met max 3 actieve projecten als labels + *Ik ben klaar voor
+vandaag*. Voeg alleen "Anders" toe als de client geen vrije-tekstoptie
+aanbiedt.
 
-### Geen signaal? (commits, reflog, agenda, Claude-sessies allemaal leeg)
+### Geen signaal? (commits, reflog, agenda, agent-sessies allemaal leeg)
 
-`AskUserQuestion` met max 3 actieve projecten als suggesties (label =
-titel, description = uren-stand). Claude Code voegt "Anders" toe voor
-vrije tekst. Bij keuze van een project: ga terug naar Stap 2 met die
-context. Bij Anders: vraag wat ze deden en synthetiseer.
+Keuzelijst met max 3 actieve projecten als suggesties (label = titel,
+description = uren-stand). Voeg alleen "Anders" toe als de client geen
+vrije-tekstoptie aanbiedt. Bij keuze van een project: ga terug naar
+Stap 2 met die context. Bij Anders/vrije tekst: vraag wat ze deden en
+synthetiseer.
 
 ## Stap 4: Boeken + alerts
 
@@ -363,8 +386,8 @@ Tenzij er alerts zijn (zie hieronder).
 Lees `alerts` uit de respons en geef die kort terug. **Spreek over
 "onderbouwing"**, niet "evidence" — dat is interne API-naamgeving.
 
-Alerts handel je af met **plain-tekst vragen**, niet met modal
-keuzelijsten. Gebruiker antwoordt vrij, skill interpreteert.
+Alerts handel je af met **plain-tekst vragen**, niet met keuzelijsten.
+Gebruiker antwoordt vrij, skill interpreteert.
 
 ### `missing_evidence`
 
@@ -433,16 +456,17 @@ Wil je deze boekingen verwijderen?
 Totaal: 5 uur.
 ```
 
-### Stap 2 — Bevestiging via AskUserQuestion
+### Stap 2 — Bevestiging via keuzelijst
 
-Verplicht. Geen vrije-tekst "ja" maar altijd een keuzelijst:
+Verplicht. Geen vrije-tekst "ja" maar een keuzelijst als de client die
+ondersteunt; anders vraag expliciet om één van deze antwoorden:
 
 - *Ja, verwijder alles*
 - *Alleen deze: <titel>* (één optie per boeking)
 - *Annuleer*
 
-Bij "Alleen deze": eventueel een tweede `AskUserQuestion` met
-sub-selectie als er meer dan twee zijn.
+Bij "Alleen deze": eventueel een tweede keuzelijst of expliciete
+tekstvraag met sub-selectie als er meer dan twee zijn.
 
 ### Stap 3 — Verwijder en bevestig
 
@@ -474,4 +498,4 @@ Geen HTTP-codes oplezen.
 - Reflog blijft **lokaal**; alleen uren + project + datum gaan naar de
   API. Geen git history of commit messages naar de server sturen.
 - Config zit in `~/.config/wbso/config` (mode 600). Resetten: `rm
-  ~/.config/wbso/config` en run `/wbso` opnieuw.
+  ~/.config/wbso/config` en start deze skill opnieuw.

@@ -2,14 +2,14 @@
   <a href="https://wbso.ai"><img src="./assets/logo.svg" alt="WBSO.ai" width="160"></a>
 </p>
 
-<h1 align="center">Boek je WBSO-uren rechtstreeks vanuit Claude Code</h1>
+<h1 align="center">Boek je WBSO-uren rechtstreeks vanuit Claude Code of Codex</h1>
 
 <p align="center">
   Geen context-switch naar een urenformulier. Geen einde-van-de-dag-paniek. Geen gokken of je werk WBSO-waardig was.
 </p>
 
 <p align="center">
-  <strong>Eén plugin in Claude Code. Eén gesprek. Klaar.</strong>
+  <strong>Eén plugin in je AI-agent. Eén gesprek. Klaar.</strong>
 </p>
 
 ---
@@ -21,9 +21,9 @@ Te veel context-switch, dus blijft het liggen — of je betaalt
 een bemiddelaar 20-30% van je voordeel om 't voor je te doen.
 
 Deze plugin lost dat op. De skill draait in jouw werk-omgeving,
-leest waar je vandaag aan bezig was (commits + Claude-sessies,
-beide volledig lokaal), beoordeelt het tegen de RVO-criteria, en
-boekt het direct in op WBSO.ai.
+leest waar je vandaag aan bezig was (commits + lokale agent-sessies,
+volledig lokaal), beoordeelt het tegen de RVO-criteria, en boekt het
+direct in op WBSO.ai.
 
 ## Voorbeeld van een gesprek
 
@@ -34,7 +34,7 @@ Welkom bij WBSO.ai 👋 Ik help je je WBSO-uren registreren via een
 kort gesprek. Je vertelt waar je vandaag aan hebt gewerkt, we kijken
 samen of het WBSO-waardig is, en ik boek het direct in.
 
-[ skill leest jouw commits + Claude-sessies van vandaag,
+[ skill leest jouw commits + agent-sessies van vandaag,
   haalt jouw actieve WBSO-projecten op ]
 
 4 uur op Classifier en routing (AI-assistent voor klantenservice).
@@ -51,20 +51,22 @@ Registreer dit? (ja / pas aan / niet)
 Geen modal-dialogen, geen drop-downs, geen verplichte velden. Gewoon
 typen wat je hebt gedaan.
 
-## Waarom een Claude Code-skill?
+## Waarom een agent-skill?
 
 Agents zijn first-class burgers bij WBSO.ai. Onze compliance-API
-spreekt markdown met XML-tags zodat Claude 't direct kan lezen, de
-skill shipt z'n eigen CLI in `$PATH`, en alle vragen zijn vrije
+spreekt markdown met XML-tags zodat Claude Code en Codex 't direct
+kunnen lezen, de skill shipt z'n eigen CLI, en alle vragen zijn vrije
 tekst — geen wrapper-laag, geen UI-omleiding.
 
 - 💬 **Conversational** — typ wat je deed, geen invulvelden
-- 🧠 **Met geheugen** — leest je `git log` van vandaag én je Claude-prompts, zodat je niet hoeft terug te denken wat je deed
+- 🧠 **Met geheugen** — leest je `git log` van vandaag én lokale Claude/Codex-prompts, zodat je niet hoeft terug te denken wat je deed
 - 📚 **Transparant** — beoordeelt elke activiteit tegen de RVO-criteria en laat zien waarom 't wel of niet WBSO is
 - ⚡ **Snel** — gemiddeld één Enter-druk om een dag te boeken
 - 🔒 **Lokaal-first** — code, commit-messages en sessie-inhoud blijven op je laptop; alleen project + uren + datum gaan naar de API
 
 ## Installatie
+
+### Claude Code
 
 ```bash
 claude plugins marketplace add wbso-ai/skill
@@ -73,22 +75,35 @@ claude plugins install wbso@wbso-ai
 
 Daarna in Claude Code: `/wbso`.
 
+### Codex
+
+```bash
+codex plugin marketplace add wbso-ai/skill
+codex
+/plugins
+```
+
+Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
+nieuwe thread. Gebruik de skill via de plugin/skill selector, of vraag
+direct: `Gebruik WBSO.ai om mijn WBSO-uren van vandaag te registreren`.
+
 De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
 **Heb je 'm nog niet?** Je maakt 'm aan via de skill zelf — naam,
 e-mail, bedrijf. Geen wurgcontracten, geen jaarbinding, gewoon een
 account in 60 seconden.
 
-## Slash-commando's
+## Skills
 
-| Commando | Wat het doet |
-|---|---|
-| `/wbso` | Registreer uren via een gesprek |
-| `/wbso:signup` | Maak een nieuw WBSO.ai-account aan |
-| `/wbso:auth` | Log in met een bestaande API key |
-| `/wbso:whoami` | Wie ben ik nu ingelogd als? |
-| `/wbso:logout` | Verwijder de lokale config |
+| Skill | Claude Code | Wat het doet |
+|---|---|---|
+| `wbso` | `/wbso` | Registreer uren via een gesprek |
+| `signup` | `/wbso:signup` | Maak een nieuw WBSO.ai-account aan |
+| `auth` | `/wbso:auth` | Log in met een bestaande API key |
+| `whoami` | `/wbso:whoami` | Wie ben ik nu ingelogd als? |
+| `logout` | `/wbso:logout` | Verwijder de lokale config |
 
-Optioneel: `/wbso 4` om direct 4 uur voor te stellen op je
+Optioneel: `/wbso 4` in Claude Code, of een urenargument bij expliciete
+Codex skill-invocation, om direct 4 uur voor te stellen op je
 voornaamste activiteit van vandaag.
 
 ## Privacy
@@ -97,7 +112,7 @@ WBSO.ai gelooft dat jouw broncode jouw eigendom is, niet ons
 trainingsmateriaal.
 
 - **Lokaal**: `git log`, commit-messages, `git diff` en
-  Claude-sessieprompts blijven op je laptop
+  Claude/Codex-sessieprompts blijven op je laptop
 - **Naar de API**: alleen project + uren + datum + (optioneel) een
   korte handgeschreven onderbouwing
 - **Geen geheime data**: API key staat in `~/.config/wbso/config`
@@ -107,14 +122,15 @@ trainingsmateriaal.
 
 ```bash
 claude plugins update wbso@wbso-ai
+codex plugin marketplace upgrade wbso-ai
 ```
 
-Daarna Claude Code herstarten.
+Daarna Claude Code of Codex herstarten.
 
 ## Geen account? Start hier
 
 Maak een account aan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden)
-of doe het rechtstreeks vanuit de skill met `/wbso:signup`. Vragen?
+of doe het rechtstreeks vanuit de `signup` skill. Vragen?
 Mail [paul@wbso.ai](mailto:paul@wbso.ai) of bel **085 333 26 15**.
 
 WBSO.ai helpt Nederlandse softwarebedrijven hun WBSO-administratie
@@ -132,18 +148,36 @@ voor je doen.
 ### Repo-structuur
 
 ```
-.claude-plugin/marketplace.json     # marketplace metadata
+.claude-plugin/marketplace.json     # Claude marketplace metadata
+.agents/plugins/marketplace.json    # Codex marketplace metadata
 packages/
 └── wbso/
-    ├── .claude-plugin/plugin.json  # plugin metadata
-    ├── bin/wbso                    # CLI (bash, in $PATH bij activatie)
+    ├── .claude-plugin/plugin.json  # Claude plugin metadata
+    ├── .codex-plugin/plugin.json   # Codex plugin metadata
+    ├── bin/wbso                    # CLI (bash)
     └── skills/
-        ├── wbso/SKILL.md           # uren registreren
-        ├── signup/SKILL.md         # account aanmaken
-        ├── auth/SKILL.md           # inloggen
-        ├── whoami/SKILL.md         # wie ben ik
-        └── logout/SKILL.md         # uitloggen
+        ├── wbso/
+        │   ├── SKILL.md            # uren registreren
+        │   └── scripts/wbso        # Codex wrapper naar ../../bin/wbso
+        ├── signup/
+        │   ├── SKILL.md            # account aanmaken
+        │   └── scripts/wbso
+        ├── auth/
+        │   ├── SKILL.md            # inloggen
+        │   └── scripts/wbso
+        ├── whoami/
+        │   ├── SKILL.md            # wie ben ik
+        │   └── scripts/wbso
+        └── logout/
+            ├── SKILL.md            # uitloggen
+            └── scripts/wbso
 ```
+
+Claude Code voegt `bin/` van de plugin toe aan de Bash `PATH`, dus
+skills kunnen daar `wbso` als bare command gebruiken. Codex documenteert
+geen plugin-root `bin/` PATH; voor Codex exposeert elke skill daarom een
+standaard Agent Skills `scripts/wbso` wrapper die naar dezelfde
+plugin-root binary doorstart.
 
 ### Lokaal testen
 
@@ -152,6 +186,7 @@ git clone git@github.com:wbso-ai/skill.git
 cd skill
 claude plugins validate ./packages/wbso
 claude --plugin-dir ./packages/wbso  # eenmalig test, geen install
+codex plugin marketplace add .
 ```
 
 ### Tegen een lokale server testen
@@ -175,10 +210,11 @@ bin/release
 ```
 
 Berekent de nieuwe versie op basis van commit-count (`1.<commit-count>`),
-bumpt `version` in `packages/wbso/.claude-plugin/plugin.json`, maakt
-een release-commit + tag (`v1.N`), pusht naar `origin/main`. Zonder
-expliciete `version` in `plugin.json` zou elke commit als nieuwe
-versie tellen — daarom een bewuste bump.
+bumpt `version` in zowel `packages/wbso/.claude-plugin/plugin.json` als
+`packages/wbso/.codex-plugin/plugin.json`, maakt een release-commit +
+tag (`v1.N`), pusht naar `origin/main`. Zonder expliciete `version` in
+`plugin.json` zou elke commit als nieuwe versie tellen — daarom een
+bewuste bump.
 
 ### Wisselen tussen GitHub-versie en lokale dev-versie
 
@@ -201,8 +237,8 @@ herstarten.
 
 ### CLI vanuit een gewone shell gebruiken
 
-De `wbso` CLI staat in `$PATH` zodra de plugin actief is. Wil je 'm
-ook buiten Claude Code aanroepen:
+Sommige clients zetten plugin-`bin/` automatisch in `$PATH`. Wil je de
+CLI ook vanuit een gewone shell gebruiken:
 
 ```bash
 ln -s ~/Documents/skill/packages/wbso/bin/wbso ~/.local/bin/wbso
