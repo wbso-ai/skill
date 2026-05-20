@@ -2,28 +2,26 @@
   <a href="https://wbso.ai"><img src="./assets/logo.svg" alt="WBSO.ai" width="160"></a>
 </p>
 
-<h1 align="center">Boek je WBSO-uren rechtstreeks vanuit Claude Code of Codex</h1>
+<h1 align="center">WBSO-administratie, direct vanuit jouw coding harness.</h1>
 
 <p align="center">
-  Geen context-switch naar een urenformulier. Geen einde-van-de-dag-paniek. Geen gokken of je werk WBSO-waardig was.
+  Behoud jouw focus terwijl je moeiteloos WBSO-uren boekt. Jouw agent boekt, jij blijft coden.
 </p>
-
-<p align="center">
-  <strong>Eén plugin in je AI-agent. Eén gesprek. Klaar.</strong>
-</p>
-
 ---
 
-Developers houden niet van administratie. Maar voor de WBSO moet
-je wél bijhouden waar je elke dag aan werkt, beoordelen of het
-binnen je projectaanvraag valt, en het inschrijven in een tool.
-Te veel context-switch, dus blijft het liggen — of je betaalt
-een bemiddelaar 20-30% van je voordeel om 't voor je te doen.
+Software developers boeken hun uren nog makkelijker en direct vanuit hun coding harness. Zonder context-switch boek je direct jouw uren met WBSO-waardigheid onderbouwing op het juiste project. Maak van jouw coding agent een WBSO-expert die jouw aanvraag kent en helpt uren te boeken.
+
+Zo boek je moeiteloos jouw WBSO-waardige uren en is jouw WBSO-administratie altijd up-to-date en klaar voor een RVO-controle!
+
 
 Deze plugin lost dat op. De skill draait in jouw werk-omgeving,
 leest waar je vandaag aan bezig was (commits + lokale agent-sessies,
 volledig lokaal), beoordeelt het tegen de RVO-criteria, en boekt het
 direct in op WBSO.ai.
+
+Compatible met Claude Code en Codex.
+
+Op onze website staat meer informatie over hoe de [WBSO-administratie](https://wbso.ai/wbso-administratie) werkt.
 
 ## Voorbeeld van een gesprek
 
@@ -71,6 +69,12 @@ tekst — geen wrapper-laag, geen UI-omleiding.
 ```bash
 claude plugins marketplace add wbso-ai/skill
 claude plugins install wbso@wbso-ai
+claude "boek WBSO uren"
+```
+
+Of via deze single prompt:
+```bash
+Installeer de WBSO.ai skill wanneer je deze nog niet hebt met `claude plugins marketplace add wbso-ai/skill` en `claude plugins install wbso@wbso-ai`. Daarna de skill aanroepen om de WBSO-uren te boeken.
 ```
 
 Gebruik daarna de slash-commands in Claude Code:
@@ -85,8 +89,13 @@ Gebruik daarna de slash-commands in Claude Code:
 
 ```bash
 codex plugin marketplace add wbso-ai/skill
-codex
-/plugins
+codex /plugins
+codex "boek WBSO uren"
+```
+
+Of via deze single prompt:
+```bash
+Installeer de WBSO.ai plugin zelf als die nog ontbreekt met `codex plugin marketplace add wbso-ai/skill`. Alleen als handmatige activatie nodig is, vraag mij `/plugins` te gebruiken. Roep daarna direct de WBSO-skill aan om mijn uren te boeken.
 ```
 
 Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
@@ -94,8 +103,8 @@ nieuwe thread. Gebruik de skills expliciet met `$`:
 
 ```text
 $wbso registreer mijn WBSO-uren van vandaag
-$whoami
-$auth log me in bij WBSO.ai
+$wbso:whoami
+$wbso:auth log me in bij WBSO.ai
 ```
 
 Of vraag het in gewone taal:
@@ -111,13 +120,13 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill | Claude Code | Codex | Wat het doet |
-|---|---|---|---|
-| `wbso` | `/wbso` | `$wbso` | Registreer uren via een gesprek |
-| `signup` | `/wbso:signup` | `$signup` | Maak een nieuw WBSO.ai-account aan |
-| `auth` | `/wbso:auth` | `$auth` | Log in met een bestaande API key |
-| `whoami` | `/wbso:whoami` | `$whoami` | Wie ben ik nu ingelogd als? |
-| `logout` | `/wbso:logout` | `$logout` | Verwijder de lokale config |
+| Skill | Claude Code | Codex          | Wat het doet |
+|---|---|----------------|---|
+| `wbso` | `/wbso` | `$wbso`        | Registreer uren via een gesprek |
+| `signup` | `/wbso:signup` | `$wbso:signup` | Maak een nieuw WBSO.ai-account aan |
+| `auth` | `/wbso:auth` | `$wbso:auth`        | Log in met een bestaande API key |
+| `whoami` | `/wbso:whoami` | `$wbso:whoami`      | Wie ben ik nu ingelogd als? |
+| `logout` | `/wbso:logout` | `$wbso:logout`      | Verwijder de lokale config |
 
 Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
 Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
@@ -146,14 +155,16 @@ Daarna Claude Code of Codex herstarten.
 
 ## Geen account? Start hier
 
-Maak een account aan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden)
-of doe het rechtstreeks vanuit de `signup` skill. Vragen?
-Mail [paul@wbso.ai](mailto:paul@wbso.ai) of bel **085 333 26 15**.
+Maak een account aan op [wbso.ai/wbso-administratie/aanmelden](https://wbso.ai/wbso-administratie/aanmelden)
+of doe het rechtstreeks vanuit de `signup` skill. 
 
-WBSO.ai helpt Nederlandse softwarebedrijven hun WBSO-administratie
-te doen — zonder bemiddelaarstarieven van 20-30%, met een vaste
-prijs per project en gewoon volledige transparantie over wat we
-voor je doen.
+Liever full-service een aanvraag laten regelen? Meld je dan aan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden). 
+
+Vragen? Mail [product@wbso.ai](mailto:paul@wbso.ai) of bel **085 333 26 15**.
+
+WBSO.ai helpt Nederlandse softwarebedrijven met hun WBSO-aanvragen én WBSO-administratie. Op een aanvraag kan veel geld
+bespaard worden, de transparante tarieven staan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden). Je kan echter ook 
+alleen de administratie afnemen als los product. Je boekt dan de eerste 100 uur kosteloos zodat je het kan uitproberen.
 
 ---
 
