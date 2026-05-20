@@ -5,23 +5,28 @@
 <h1 align="center">WBSO-administratie, direct vanuit jouw coding harness.</h1>
 
 <p align="center">
-  Behoud jouw focus terwijl je moeiteloos WBSO-uren boekt. Jouw agent boekt, jij blijft coden.
+  Behoud jouw focus terwijl je moeiteloos WBSO-uren boekt. Jouw agent
+  boekt, jij blijft coden.
 </p>
+
 ---
 
-Software developers boeken hun uren nog makkelijker en direct vanuit hun coding harness. Zonder context-switch boek je direct jouw uren met WBSO-waardigheid onderbouwing op het juiste project. Maak van jouw coding agent een WBSO-expert die jouw aanvraag kent en helpt uren te boeken.
+Software developers boeken hun uren nog makkelijker en direct vanuit hun
+coding harness. Zonder context-switch boek je direct jouw uren met
+WBSO-waardigheid onderbouwing op het juiste project. Maak van jouw coding
+agent een WBSO-expert die jouw aanvraag kent en helpt uren te boeken.
 
-Zo boek je moeiteloos jouw WBSO-waardige uren en is jouw WBSO-administratie altijd up-to-date en klaar voor een RVO-controle!
+Zo boek je moeiteloos jouw WBSO-waardige uren en is jouw WBSO-administratie
+altijd up-to-date en klaar voor een RVO-controle!
 
-
-Deze plugin lost dat op. De skill draait in jouw werk-omgeving,
-leest waar je vandaag aan bezig was (commits + lokale agent-sessies,
-volledig lokaal), beoordeelt het tegen de RVO-criteria, en boekt het
-direct in op WBSO.ai.
+Deze plugin lost dat op. De skill draait in jouw werk-omgeving, leest waar
+je vandaag aan bezig was (commits + lokale agent-sessies, volledig lokaal),
+beoordeelt het tegen de RVO-criteria, en boekt het direct in op WBSO.ai.
 
 Compatible met Claude Code en Codex.
 
-Op onze website staat meer informatie over hoe de [WBSO-administratie](https://wbso.ai/wbso-administratie) werkt.
+Op onze website staat meer informatie over hoe de
+[WBSO-administratie](https://wbso.ai/wbso-administratie) werkt.
 
 ## Voorbeeld van een gesprek
 
@@ -57,10 +62,13 @@ kunnen lezen, de skill shipt z'n eigen CLI, en alle vragen zijn vrije
 tekst — geen wrapper-laag, geen UI-omleiding.
 
 - 💬 **Conversational** — typ wat je deed, geen invulvelden
-- 🧠 **Met geheugen** — leest je `git log` van vandaag én lokale Claude/Codex-prompts, zodat je niet hoeft terug te denken wat je deed
-- 📚 **Transparant** — beoordeelt elke activiteit tegen de RVO-criteria en laat zien waarom 't wel of niet WBSO is
+- 🧠 **Met geheugen** — leest je `git log` van vandaag én lokale
+  Claude/Codex-prompts, zodat je niet hoeft terug te denken wat je deed
+- 📚 **Transparant** — beoordeelt elke activiteit tegen de RVO-criteria
+  en laat zien waarom 't wel of niet WBSO is
 - ⚡ **Snel** — gemiddeld één Enter-druk om een dag te boeken
-- 🔒 **Lokaal-first** — code, commit-messages en sessie-inhoud blijven op je laptop; alleen project + uren + datum gaan naar de API
+- 🔒 **Lokaal-first** — code, commit-messages en sessie-inhoud blijven op
+  je laptop; alleen project + uren + datum gaan naar de API
 
 ## Installatie
 
@@ -73,7 +81,8 @@ claude "boek WBSO uren"
 ```
 
 Of via deze single prompt:
-```bash
+
+```text
 Installeer de WBSO.ai skill wanneer je deze nog niet hebt met `claude plugins marketplace add wbso-ai/skill` en `claude plugins install wbso@wbso-ai`. Daarna de skill aanroepen om de WBSO-uren te boeken.
 ```
 
@@ -94,7 +103,8 @@ codex "boek WBSO uren"
 ```
 
 Of via deze single prompt:
-```bash
+
+```text
 Installeer de WBSO.ai plugin zelf als die nog ontbreekt met `codex plugin marketplace add wbso-ai/skill`. Alleen als handmatige activatie nodig is, vraag mij `/plugins` te gebruiken. Roep daarna direct de WBSO-skill aan om mijn uren te boeken.
 ```
 
@@ -120,13 +130,13 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill | Claude Code | Codex          | Wat het doet |
-|---|---|----------------|---|
-| `wbso` | `/wbso` | `$wbso`        | Registreer uren via een gesprek |
+| Skill    | Claude Code    | Codex          | Wat het doet                       |
+| -------- | -------------- | -------------- | ---------------------------------- |
+| `wbso`   | `/wbso`        | `$wbso`        | Registreer uren via een gesprek    |
 | `signup` | `/wbso:signup` | `$wbso:signup` | Maak een nieuw WBSO.ai-account aan |
-| `auth` | `/wbso:auth` | `$wbso:auth`        | Log in met een bestaande API key |
-| `whoami` | `/wbso:whoami` | `$wbso:whoami`      | Wie ben ik nu ingelogd als? |
-| `logout` | `/wbso:logout` | `$wbso:logout`      | Verwijder de lokale config |
+| `auth`   | `/wbso:auth`   | `$wbso:auth`   | Log in met een bestaande API key   |
+| `whoami` | `/wbso:whoami` | `$wbso:whoami` | Wie ben ik nu ingelogd als?        |
+| `logout` | `/wbso:logout` | `$wbso:logout` | Verwijder de lokale config         |
 
 Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
 Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
@@ -155,16 +165,20 @@ Daarna Claude Code of Codex herstarten.
 
 ## Geen account? Start hier
 
-Maak een account aan op [wbso.ai/wbso-administratie/aanmelden](https://wbso.ai/wbso-administratie/aanmelden)
-of doe het rechtstreeks vanuit de `signup` skill. 
+Maak een account aan op
+[wbso.ai/wbso-administratie/aanmelden](https://wbso.ai/wbso-administratie/aanmelden)
+of doe het rechtstreeks vanuit de `signup` skill.
 
-Liever full-service een aanvraag laten regelen? Meld je dan aan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden). 
+Liever full-service een aanvraag laten regelen? Meld je dan aan op
+[wbso.ai/aanmelden](https://wbso.ai/aanmelden).
 
 Vragen? Mail [product@wbso.ai](mailto:paul@wbso.ai) of bel **085 333 26 15**.
 
-WBSO.ai helpt Nederlandse softwarebedrijven met hun WBSO-aanvragen én WBSO-administratie. Op een aanvraag kan veel geld
-bespaard worden, de transparante tarieven staan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden). Je kan echter ook 
-alleen de administratie afnemen als los product. Je boekt dan de eerste 100 uur kosteloos zodat je het kan uitproberen.
+WBSO.ai helpt Nederlandse softwarebedrijven met hun WBSO-aanvragen én
+WBSO-administratie. Op een aanvraag kan veel geld bespaard worden, de
+transparante tarieven staan op [wbso.ai/aanmelden](https://wbso.ai/aanmelden).
+Je kan echter ook alleen de administratie afnemen als los product. Je boekt
+dan de eerste 100 uur kosteloos zodat je het kan uitproberen.
 
 ---
 
