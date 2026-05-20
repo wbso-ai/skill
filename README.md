@@ -135,7 +135,7 @@ account in 60 seconden.
 | `wbso`   | `/wbso`        | `$wbso`        | Registreer uren via een gesprek    |
 | `signup` | `/wbso:signup` | `$wbso:signup` | Maak een nieuw WBSO.ai-account aan |
 | `auth`   | `/wbso:auth`   | `$wbso:auth`   | Log in met een bestaande API key   |
-| `whoami` | `/wbso:whoami` | `$wbso:whoami` | Wie ben ik nu ingelogd als?        |
+| `whoami` | `/wbso:whoami` | `$wbso:whoami` | Toon het ingelogde account         |
 | `logout` | `/wbso:logout` | `$wbso:logout` | Verwijder de lokale config         |
 
 Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in

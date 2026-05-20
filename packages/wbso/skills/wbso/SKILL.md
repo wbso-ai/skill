@@ -63,14 +63,16 @@ Beschikbare subcommands:
 - `wbso track-time --project SLUG --date YYYY-MM-DD --duration N [--user-email X]`
 - `wbso untrack-time --id N`
 - `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
+- `wbso suggest-project --description X`
 
 Output:
 
 - `wbso context` retourneert **markdown met XML-tags** (verhaal-vorm,
-  geoptimaliseerd om te lezen — kijk naar `<status>`, `<project>` en
-  `<alert>` tags)
-- `wbso signup`, `wbso track-time`, `wbso evidence`, `wbso untrack-time`
-  retourneren **JSON** van de server (de skill leest die direct)
+  geoptimaliseerd om te lezen — kijk naar `<status>`, `<project>`,
+  `<submission_owners>` en `<alert>` tags)
+- `wbso signup`, `wbso track-time`, `wbso evidence`, `wbso untrack-time`,
+  `wbso suggest-project` retourneren **JSON** van de server (de skill
+  leest die direct)
 - `wbso login` print `ok (<email>)` bij succes
 
 ## Stap 0: Login check via `wbso context`
@@ -164,6 +166,7 @@ Velden in de respons:
 | `commits` | Commits van deze user vandaag met score (0-10). |
 | `events` | Agenda-items vandaag. |
 | `evidence` | Bestaande onderbouwing. |
+| `submission_owners` | De aanvraag-verantwoordelijke(n) van het bedrijf, met naam en rol. Gebruik de naam bij de "mogelijk nieuw project"-flow. |
 
 ### Lokale signalen — al meegenomen door `wbso context`
 
@@ -195,10 +198,10 @@ de waarschuwing op in Stap 3 voordat je boekt:
 - `weekend` → klopt het echt dat je vandaag werkt?
 - `over_8_hours` → 8+ uur is een rode vlag bij RVO-controle (zie
   `instructions`)
-- `missing_evidence` / `low_commit_scores` → er is geen of te zwakke
-  onderbouwing — bied bij het bevestigen al aan om er een toe te voegen
 
-Zo voorkomt de gebruiker een verrassing achteraf.
+`missing_evidence` / `low_commit_scores` waarschuw je **niet** vooraf
+— onderbouwing is optioneel en wordt na het boeken één keer neutraal
+aangeboden (zie Stap 4). Niet pushen.
 
 ## Stap 2: Synthese — kies wat nog NIET geboekt is
 
@@ -221,11 +224,17 @@ Vorm een voorstel:
      uren op staan (alfabetisch op `title`)
   4. Pas als alles al geboekt staat én er geen onbenutte activiteit
      is: pivot naar de "Alles al geboekt"-flow (zie hieronder)
+  5. Is het werk WBSO-waardig maar past het bij **geen enkel** actief
+     project? Boek geen uren — pivot naar de "Mogelijk nieuw
+     project"-flow (zie hieronder)
 - **Fase**: leid af uit commits, reflog, agenda of agent-prompts. Bij
   twijfel: de eerste fase in `phases`
-- **WBSO-waardig**: volgens `instructions`. Commits score > 6 → `wel`,
-  < 4 → vaak `niet`. Bij twijfel: `wel` met een voorzichtige reden.
-  `wbso_reason` in één korte zin, max 15 woorden
+- **WBSO-toets**: werk op een actief project is standaard gewoon
+  WBSO-waardig — geen oordeel nodig in het voorstel. Voeg alleen een
+  korte WBSO-notitie toe als het werk duidelijk in een niet-S&O
+  categorie valt (design/UI/UX, marketing/sales, administratie/
+  management, documentatie, regulier onderhoud, configuratie/deployment,
+  leren/cursus); zie `instructions`. Splits niet in "deels"
 - **Uren**: doe **geen** schatting uit losse pols. Gebruik alleen:
   1. Het urenargument als dat is meegegeven
   2. De duur van een eenduidig agenda-block dat overeenkomt met de
@@ -242,6 +251,11 @@ Doelgroep is de developer zelf. Technische taal is prima. Wees
 **zo kort mogelijk**: end-of-day wil de gebruiker geen audit lezen,
 alleen een 2-regel proposal en een Enter-druk.
 
+Geef je WBSO-inschatting **één keer**, in één zin. Heeft de gebruiker
+eenmaal gekozen (boeken, melden, overslaan): voer uit en bevestig
+beknopt — herhaal het advies niet en plak er geen nieuwe
+kanttekeningen aan. Niet meedenken waar het niet gevraagd is.
+
 **De gebruiker boekt, jij stelt voor.** Schrijf niet "ik boek dit
 niet" of "ik laat dit weg" alsof je zelf de actie uitvoert. Schrijf
 in de derde persoon over de uren: *"Deze commits tellen niet als
@@ -256,33 +270,41 @@ Gebruik die alleen intern in API-calls.
 
 ### Voorstel: compact
 
-Eén regel context (alleen als nuttig), dan het kern-blok in twee
-zinnen — geen iconen, geen bullet-lijst. WBSO-regel **altijd**
-aanwezig, dat is het hart van de skill.
+Eén regel context (alleen als nuttig), dan het kern-blok — geen
+iconen, geen bullet-lijst. Standaard is dat gewoon `<fase> op
+<project_title>.` zonder WBSO-oordeel. Voeg **alleen** een tweede
+regel toe als het werk duidelijk in een niet-S&O categorie valt:
 
 ```
 <optionele één-regel context, alleen als update of als al iets staat>
 
 <fase> op <project_title>.
-WBSO <wel|deels|niet>: <reden, max 15 woorden>.
+<alleen als niet-S&O categorie: één neutrale zin, bijv. "Dit is
+designwerk, dat valt doorgaans buiten S&O — jouw keuze.">
 ```
 
 Alleen als de uren-context **expliciet** uit een urenargument of een
 agenda-block volgt, vermeld je die: `<uren> uur op <fase>`.
 Anders: laat de uren weg en vraag ze later expliciet.
 
-Voorbeeld zonder uren-context:
+Voorbeeld zonder uren-context (standaard, geen WBSO-oordeel):
 
 ```
 Classifier en routing op AI-assistent voor klantenservice.
-WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 ```
 
 Voorbeeld mét uren-context (agenda-block van 2u of urenargument `2`):
 
 ```
 2 uur op Classifier en routing (AI-assistent voor klantenservice).
-WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
+```
+
+Voorbeeld mét niet-S&O notitie (alleen bij duidelijk design/marketing/
+admin/docs/onderhoud-werk):
+
+```
+2 uur op Designsysteem (AI-assistent voor klantenservice).
+Dit is designwerk, dat valt doorgaans buiten S&O — jouw keuze.
 ```
 
 Voorbeelden van wanneer een context-regel mag:
@@ -301,7 +323,6 @@ Voorbeeld zonder uren-context:
 
 ```
 Classifier en routing op AI-assistent voor klantenservice.
-WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 
 Hoeveel uur heb je hieraan gewerkt?
 ```
@@ -310,7 +331,6 @@ Voorbeeld mét uren-context (urenargument `2` of agenda-block):
 
 ```
 2 uur op Classifier en routing (AI-assistent voor klantenservice).
-WBSO wel: lerende classifier voor ticket-routing valt binnen R&D-fase Q2.
 
 Registreer dit? (ja / pas aan / niet)
 ```
@@ -357,6 +377,38 @@ vrije-tekstoptie aanbiedt. Bij keuze van een project: ga terug naar
 Stap 2 met die context. Bij Anders/vrije tekst: vraag wat ze deden en
 synthetiseer.
 
+### Mogelijk nieuw project? (WBSO-waardig werk, geen passend project)
+
+Het werk lijkt WBSO-waardig, maar past bij geen enkel actief project uit
+`projects`. **Boek dan geen uren** — uren kunnen alleen op een
+geregistreerd project. Stel voor het mogelijk nieuwe project te melden
+bij wie de aanvraag beheert.
+
+Pak de naam uit `<submission_owners>` en spreek die bij voornaam aan,
+plain tekst:
+
+```
+Het lijkt erop dat je werk hebt gedaan dat nog niet binnen een
+geregistreerd project valt. Wil je dat ik Koen (Aanvraag beheerder)
+laat weten dat er mogelijk een nieuw WBSO-project is?
+```
+
+- **Ja** → vraag kort waar het project over gaat (1-2 zinnen: technisch
+  knelpunt + aanpak), dan:
+
+  ```bash
+  wbso suggest-project --description "<wat de gebruiker zei>"
+  ```
+
+  De respons bevat een `message`, bijvoorbeeld *"Doorgegeven aan de
+  aanvraag-verantwoordelijke."* Geef die boodschap kort terug en stop
+  daarna. Voeg **geen** WBSO-beoordeling of kanttekening over het
+  gemelde werk toe; de aanvraag-verantwoordelijke weegt het.
+- **Nee** → respecteer dat, er gebeurt niets. Geen boeking.
+
+Staat er niemand in `<submission_owners>`: noem geen naam, maar bied de melding
+nog steeds aan ("je WBSO-beheerder").
+
 ## Stap 4: Boeken + alerts
 
 ```bash
@@ -391,24 +443,21 @@ Gebruiker antwoordt vrij, skill interpreteert.
 
 ### `missing_evidence`
 
-Vraag direct in plain tekst:
+Onderbouwing is optioneel en een hulp, geen eis. Bied het **één keer**
+neutraal aan in plain tekst:
 
-> *"Geen onderbouwing gekoppeld. Wat is het technisch knelpunt
-> waar je vandaag aan werkte en hoe heb je 't aangepakt?"*
+> *"Er hangt nog geen onderbouwing aan deze dag. Wil je er kort een
+> toevoegen? Eén à twee zinnen over waar je aan werkte is genoeg.
+> (Of zeg 'skip'.)"*
 
-Komt de gebruiker met een echte onderbouwing → toets tegen
-`instructions` uit de context, POST naar `/evidence`.
+Geeft de gebruiker een beschrijving — kort of globaal — neem die
+zoals 'ie is en POST naar `/evidence`. Toets niet, vraag niet door,
+ga niet op zoek naar "het technische knelpunt".
 
-Heeft 'ie er geen zin in of zegt "skip" / "later" / "geen
-onderbouwing" → respecteer dat. Eén regel terug: *"Oké, dan geen
-onderbouwing. RVO-risico bij jou."*
-
-Valt het antwoord onder een niet-WBSO categorie ("design werk",
-"documentatie", "refactoring zonder knelpunt"), of mist het een
-technisch knelpunt of nieuwe oplossing? Vraag kort door — en als
-blijkt dat het werk écht niet WBSO-waardig was, bied dan aan om
-de boeking om te zetten naar `wbso: niet` of helemaal te
-verwijderen. Doe pas een POST naar `/evidence` als 't klopt.
+Zegt 'ie "skip" / "later" / "nee" of geeft 'ie een heel dun antwoord:
+respecteer dat, geen onderbouwing, klaar. Eén korte regel: *"Oké, dan
+zonder onderbouwing."* Geen "RVO-risico bij jou", geen tegenvragen.
+De boeking blijft staan.
 
 ### `over_8_hours`
 

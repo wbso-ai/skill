@@ -59,6 +59,7 @@ Commands:
   track-time    Registreer uren op een project
   untrack-time  Verwijder een urenregistratie
   evidence      Voeg onderbouwing toe
+  suggest-project  Meld een mogelijk nieuw WBSO-project bij de beheerder
   whoami        Toon wie ingelogd is (of "not_logged_in")
 
 Run 'wbso <command> --help' voor opties per command.
@@ -436,6 +437,25 @@ print(json.dumps({"evidence": ev}))
     -d "$body"
 }
 
+cmd_suggest_project() {
+  parse_args "description" "$@"
+  : "${ARG_description:?--description verplicht}"
+
+  load_env
+  require_auth
+
+  local body
+  body=$(python3 -c '
+import json, sys
+print(json.dumps({"project_suggestion": {"description": sys.argv[1]}}))
+' "$ARG_description")
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/project_suggestions" \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
 main() {
   [ $# -lt 1 ] && usage
   local cmd="$1"; shift
@@ -446,6 +466,7 @@ main() {
     track-time) cmd_track_time "$@" ;;
     untrack-time) cmd_untrack_time "$@" ;;
     evidence) cmd_evidence "$@" ;;
+    suggest-project) cmd_suggest_project "$@" ;;
     whoami) cmd_whoami "$@" ;;
     -h|--help|help) usage ;;
     *) echo "error: onbekend command '$cmd'" >&2; usage ;;
