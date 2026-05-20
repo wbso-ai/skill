@@ -12,9 +12,29 @@ CONFIG_FILE="$CONFIG_DIR/config"
 ENV_LOCAL="$CONFIG_DIR/.env.local"
 DEFAULT_BASE_URL="https://portal.wbso.ai"
 
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_JSON="$SCRIPT_DIR/../.claude-plugin/plugin.json"
+
+detect_agent() {
+  if [ -n "${WBSO_AGENT:-}" ]; then
+    echo "$WBSO_AGENT"
+  elif [ -n "${CLAUDECODE:-}" ]; then
+    echo "claude"
+  elif [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_SANDBOX:-}" ]; then
+    echo "codex"
+  else
+    echo "unknown"
+  fi
+}
+
+skill_version() {
+  [ -f "$PLUGIN_JSON" ] || { echo "unknown"; return; }
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version","unknown"))' "$PLUGIN_JSON" 2>/dev/null || echo "unknown"
+}
+
 load_env() {
-  [ -f "$ENV_LOCAL" ] && source "$ENV_LOCAL"
   [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+  [ -f "$ENV_LOCAL" ] && source "$ENV_LOCAL"
   WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-$DEFAULT_BASE_URL}"
 }
 
@@ -163,7 +183,7 @@ cmd_login() {
 }
 
 cmd_context() {
-  parse_args "date user-email" "$@"
+  parse_args "date user-email agent" "$@"
   load_env
 
   if [ -z "${WBSO_API_KEY:-}" ]; then
@@ -172,6 +192,9 @@ cmd_context() {
   fi
 
   local date="${ARG_date:-$(date +%F)}"
+  local agent="${ARG_agent:-$(detect_agent)}"
+  local version
+  version="$(skill_version)"
   local extra=""
   [ -n "${ARG_user_email:-}" ] && extra="--data-urlencode user_email=$ARG_user_email"
 
@@ -182,6 +205,8 @@ cmd_context() {
   status=$(curl -sS -o "$tmp" -w '%{http_code}' \
     -G -H "Authorization: Bearer $WBSO_API_KEY" \
     --data-urlencode "date=$date" \
+    --data-urlencode "agent=$agent" \
+    --data-urlencode "skill_version=$version" \
     $extra \
     "$WBSO_API_BASE_URL/api/v1/compliance/context.md")
 
