@@ -50,4 +50,6 @@ git tag -a "${tag}" -m "Release ${tag}"
 git push origin main
 git push origin "${tag}"
 
+gh release create "${tag}" --title "${tag}" --generate-notes
+
 echo "Released ${tag}"
