@@ -130,13 +130,14 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill    | Claude Code    | Codex          | Wat het doet                       |
-| -------- | -------------- | -------------- | ---------------------------------- |
-| `wbso`   | `/wbso`        | `$wbso`        | Registreer uren via een gesprek    |
-| `signup` | `/wbso:signup` | `$wbso:signup` | Maak een nieuw WBSO.ai-account aan |
-| `auth`   | `/wbso:auth`   | `$wbso:auth`   | Log in met een bestaande API key   |
-| `whoami` | `/wbso:whoami` | `$wbso:whoami` | Toon het ingelogde account         |
-| `logout` | `/wbso:logout` | `$wbso:logout` | Verwijder de lokale config         |
+| Skill      | Claude Code      | Codex            | Wat het doet                              |
+| ---------- | ---------------- | ---------------- | ----------------------------------------- |
+| `wbso`     | `/wbso`          | `$wbso`          | Registreer uren via een gesprek           |
+| `signup`   | `/wbso:signup`   | `$wbso:signup`   | Maak een nieuw WBSO.ai-account aan        |
+| `auth`     | `/wbso:auth`     | `$wbso:auth`     | Log in met een bestaande API key          |
+| `whoami`   | `/wbso:whoami`   | `$wbso:whoami`   | Toon het ingelogde account                |
+| `logout`   | `/wbso:logout`   | `$wbso:logout`   | Verwijder de lokale config                |
+| `feedback` | `/wbso:feedback` | `$wbso:feedback` | Stuur feedback over het platform naar het team |
 
 Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
 Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
@@ -210,8 +211,11 @@ packages/
         ├── whoami/
         │   ├── SKILL.md            # wie ben ik
         │   └── scripts/wbso
-        └── logout/
-            ├── SKILL.md            # uitloggen
+        ├── logout/
+        │   ├── SKILL.md            # uitloggen
+        │   └── scripts/wbso
+        └── feedback/
+            ├── SKILL.md            # platform feedback
             └── scripts/wbso
 ```
 

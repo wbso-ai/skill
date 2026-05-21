@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wbso — thin CLI wrapper voor de WBSO.ai compliance API.
 #
-# Subcommands: signup, login, context, track-time, untrack-time, evidence, whoami
+# Subcommands: signup, login, context, track-time, untrack-time, evidence, suggest-project, feedback, whoami
 # Config wordt geladen uit ~/.config/wbso/.env.local (optionele dev-override)
 # en ~/.config/wbso/config (api key, email, base url).
 
@@ -80,6 +80,7 @@ Commands:
   untrack-time  Verwijder een urenregistratie
   evidence      Voeg onderbouwing toe
   suggest-project  Meld een mogelijk nieuw WBSO-project bij de beheerder
+  feedback      Stuur platform-feedback naar het WBSO.ai team
   whoami        Toon wie ingelogd is (of "not_logged_in")
 
 Run 'wbso <command> --help' voor opties per command.
@@ -481,6 +482,41 @@ print(json.dumps({"project_suggestion": {"description": sys.argv[1]}}))
     -d "$body"
 }
 
+cmd_feedback() {
+  parse_args "message category context source" "$@"
+  : "${ARG_message:?--message verplicht}"
+  : "${ARG_category:?--category verplicht (bug, idea, question, compliment, complaint of other)}"
+
+  load_env
+
+  local body
+  body=$(python3 -c '
+import json, sys
+payload = {
+    "message": sys.argv[1],
+    "category": sys.argv[2],
+    "source": sys.argv[3] or "skill",
+}
+ctx = sys.argv[4]
+if ctx:
+    try:
+        payload["context"] = json.loads(ctx)
+    except json.JSONDecodeError:
+        payload["context"] = {"raw": ctx}
+print(json.dumps({"feedback": payload}))
+' "$ARG_message" "$ARG_category" "${ARG_source:-}" "${ARG_context:-}")
+
+  local auth_header=()
+  if [ -n "${WBSO_API_KEY:-}" ]; then
+    auth_header=(-H "Authorization: Bearer $WBSO_API_KEY")
+  fi
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/feedbacks" \
+    "${auth_header[@]}" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
 main() {
   [ $# -lt 1 ] && usage
   local cmd="$1"; shift
@@ -492,6 +528,7 @@ main() {
     untrack-time) cmd_untrack_time "$@" ;;
     evidence) cmd_evidence "$@" ;;
     suggest-project) cmd_suggest_project "$@" ;;
+    feedback) cmd_feedback "$@" ;;
     whoami) cmd_whoami "$@" ;;
     -h|--help|help) usage ;;
     *) echo "error: onbekend command '$cmd'" >&2; usage ;;

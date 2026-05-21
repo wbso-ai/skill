@@ -64,6 +64,7 @@ Beschikbare subcommands:
 - `wbso untrack-time --id N`
 - `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
 - `wbso suggest-project --description X`
+- `wbso feedback --message X --category bug|idea|question|compliment|complaint|other [--context JSON]`
 
 Output:
 
@@ -539,6 +540,22 @@ Vandaag staat nu nog 0 uur geboekt.
 Bij API-fout (404/422 e.d.): vertaal naar mensentaal ("die boeking
 bestaat niet meer", "het jaar is afgesloten — verwijderen kan niet").
 Geen HTTP-codes oplezen.
+
+## Platform feedback
+
+Als je merkt dat de gebruiker vastzit, gefrustreerd raakt, een
+vraag stelt over hoe het platform werkt, of expliciet iets zegt
+over WBSO.ai (een bug, een wens, een compliment), bied dan **één
+keer** aan om dat door te geven via de gebundelde `feedback` skill.
+Volg die skill voor de daadwerkelijke flow.
+
+Niet pushen, niet bij elk klein vraagje, niet ongevraagd op een
+soepele flow. Eén korte plain-tekst-zin volstaat:
+
+> *"Wil je dat ik dit doorgeef aan het WBSO.ai team als feedback?"*
+
+Bij "ja": delegeer naar de `feedback` skill. Bij "nee" / "later":
+respecteer dat en ga door.
 
 ## Notes
 
