@@ -50,9 +50,33 @@ pas specifiek dat ene veld opnieuw.
 }
 ```
 
-Bij `422` toont het response-body een `error`-veld. Laat dat aan de
-gebruiker zien. Komt het neer op "bestaat al"? Schakel over naar de
-gebundelde `auth` skill zodat de gebruiker met z'n bestaande key inlogt.
+### Exit code 2: het e-mailadres heeft al een account
+
+Bestaat het adres al, dan komt `wbso signup` terug met exit code 2 en
+een respons als:
+
+```json
+{
+  "existing_account": true,
+  "email": "...",
+  "login_url": "https://portal.wbso.ai/login_with_code?code=ABCDE&return_to=/companies/current/compliance/api_keys",
+  "message": "Er bestaat al een account met dit e-mailadres. Open de login-link om in te loggen."
+}
+```
+
+Open de `login_url` in de browser (dezelfde flow als de wizard hieronder,
+maar zonder `utm_source` rewrite). De gebruiker logt automatisch in en
+landt direct op de API keys-pagina. Vraag dan om de nieuwe key en gebruik
+de gebundelde `auth` skill (of `wbso login --api-key <KEY>`) om die op te
+slaan.
+
+```bash
+url=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["login_url"])')
+xdg-open "$url" 2>/dev/null || open "$url" 2>/dev/null || echo "Open zelf: $url"
+```
+
+Bij `422` toont het response-body een `error`-veld (bijv. ongeldig
+e-mailadres). Laat dat aan de gebruiker zien.
 
 ## Browser openen voor profiel
 
