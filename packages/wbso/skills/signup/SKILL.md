@@ -59,21 +59,16 @@ een respons als:
 {
   "existing_account": true,
   "email": "...",
-  "login_url": "https://portal.wbso.ai/login_with_code?code=ABCDE&return_to=/companies/current/compliance/api_keys",
-  "message": "Er bestaat al een account met dit e-mailadres. Open de login-link om in te loggen."
+  "message": "Er bestaat al een account met dit e-mailadres. We hebben een login-link naar je e-mail gestuurd."
 }
 ```
 
-Open de `login_url` in de browser (dezelfde flow als de wizard hieronder,
-maar zonder `utm_source` rewrite). De gebruiker logt automatisch in en
-landt direct op de API keys-pagina. Vraag dan om de nieuwe key en gebruik
-de gebundelde `auth` skill (of `wbso login --api-key <KEY>`) om die op te
-slaan.
-
-```bash
-url=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["login_url"])')
-xdg-open "$url" 2>/dev/null || open "$url" 2>/dev/null || echo "Open zelf: $url"
-```
+De portal stuurt automatisch een magic-link e-mail naar het opgegeven
+adres. Vraag de gebruiker om de e-mail te openen en op de inlog-link te
+klikken. Na inloggen moet de gebruiker naar
+`Instellingen → Compliance → API keys` navigeren om een nieuwe key aan
+te maken. Vraag dán om die key en gebruik de gebundelde `auth` skill (of
+`wbso login --api-key <KEY>`) om die op te slaan.
 
 Bij `422` toont het response-body een `error`-veld (bijv. ongeldig
 e-mailadres). Laat dat aan de gebruiker zien.
