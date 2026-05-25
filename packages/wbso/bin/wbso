@@ -132,6 +132,14 @@ cmd_signup() {
     --data-urlencode "utm_medium=skill" \
     "$WBSO_API_BASE_URL/signup")
 
+  local existing_account
+  existing_account=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("existing_account",""))')
+
+  if [ "$existing_account" = "True" ]; then
+    echo "$response"
+    exit 2
+  fi
+
   local api_key
   api_key=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("api_key",""))')
 

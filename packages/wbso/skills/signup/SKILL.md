@@ -50,9 +50,28 @@ pas specifiek dat ene veld opnieuw.
 }
 ```
 
-Bij `422` toont het response-body een `error`-veld. Laat dat aan de
-gebruiker zien. Komt het neer op "bestaat al"? Schakel over naar de
-gebundelde `auth` skill zodat de gebruiker met z'n bestaande key inlogt.
+### Exit code 2: het e-mailadres heeft al een account
+
+Bestaat het adres al, dan komt `wbso signup` terug met exit code 2 en
+een respons als:
+
+```json
+{
+  "existing_account": true,
+  "email": "...",
+  "message": "Er bestaat al een account met dit e-mailadres. We hebben een login-link naar je e-mail gestuurd."
+}
+```
+
+De portal stuurt automatisch een magic-link e-mail naar het opgegeven
+adres. Vraag de gebruiker om de e-mail te openen en op de inlog-link te
+klikken. Na inloggen moet de gebruiker naar
+`Instellingen → Compliance → API keys` navigeren om een nieuwe key aan
+te maken. Vraag dán om die key en gebruik de gebundelde `auth` skill (of
+`wbso login --api-key <KEY>`) om die op te slaan.
+
+Bij `422` toont het response-body een `error`-veld (bijv. ongeldig
+e-mailadres). Laat dat aan de gebruiker zien.
 
 ## Browser openen voor profiel
 
