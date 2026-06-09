@@ -63,8 +63,15 @@ Beschikbare subcommands:
 - `wbso track-time --project SLUG --date YYYY-MM-DD --duration N [--user-email X]`
 - `wbso untrack-time --id N`
 - `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
+- `wbso untrack-evidence --id N`
 - `wbso suggest-project --description X`
 - `wbso feedback --message X --category bug|idea|question|compliment|complaint|other [--context JSON]`
+
+`wbso evidence` is idempotent per dag: zonder `--external-id` gebruikt het
+een vast id `wbso-onderbouwing-<user>-<datum>`, dus opnieuw boeken voor
+dezelfde dag werkt de bestaande onderbouwing bij in plaats van een
+duplicaat te maken. Het `id` voor `untrack-evidence` komt uit de
+JSON-respons van `wbso evidence`.
 
 Output:
 
@@ -72,8 +79,8 @@ Output:
   geoptimaliseerd om te lezen — kijk naar `<status>`, `<project>`,
   `<submission_owners>` en `<alert>` tags)
 - `wbso signup`, `wbso track-time`, `wbso evidence`, `wbso untrack-time`,
-  `wbso suggest-project` retourneren **JSON** van de server (de skill
-  leest die direct)
+  `wbso untrack-evidence`, `wbso suggest-project` retourneren **JSON** van
+  de server (de skill leest die direct)
 - `wbso login` print `ok (<email>)` bij succes
 
 ## Stap 0: Login check via `wbso context`
@@ -477,12 +484,24 @@ moet de datum aangepast?"*
 wbso evidence \
   --title "<titel ≤80>" \
   --description "<beschrijving>" \
-  --date "<YYYY-MM-DD>" \
-  --external-id "time_entry-<id>"
+  --date "<YYYY-MM-DD>"
 ```
 
-`--external-id time_entry-<id>` van de zojuist aangemaakte boeking,
-zodat een tweede aanroep idempotent is.
+`--external-id` is optioneel. Laat je 'm weg, dan gebruikt de skill een
+vast id per dag (`wbso-onderbouwing-<user>-<datum>`), zodat een tweede
+aanroep voor dezelfde dag de bestaande onderbouwing bijwerkt in plaats
+van een duplicaat te maken. Wil je de onderbouwing aan één specifieke
+boeking koppelen, geef dan `--external-id time_entry-<id>`.
+
+### Onderbouwing verwijderen
+
+Zelfde voorzichtigheid als bij uren: toon eerst kort wat weg gaat en
+vraag bevestiging. Het `id` komt uit de JSON-respons van `wbso
+evidence`.
+
+```bash
+wbso untrack-evidence --id <id>
+```
 
 ## Verwijderen
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wbso — thin CLI wrapper voor de WBSO.ai compliance API.
 #
-# Subcommands: signup, login, context, track-time, untrack-time, evidence, suggest-project, feedback, whoami
+# Subcommands: signup, login, context, track-time, untrack-time, evidence, untrack-evidence, suggest-project, feedback, whoami
 # Config wordt geladen uit ~/.config/wbso/.env.local (optionele dev-override)
 # en ~/.config/wbso/config (api key, email, base url).
 
@@ -78,7 +78,8 @@ Commands:
   context       Haal compliance-context op (projects, time_entries, alerts, instructions)
   track-time    Registreer uren op een project
   untrack-time  Verwijder een urenregistratie
-  evidence      Voeg onderbouwing toe
+  evidence      Voeg onderbouwing toe (idempotent per dag)
+  untrack-evidence  Verwijder een onderbouwing
   suggest-project  Meld een mogelijk nieuw WBSO-project bij de beheerder
   feedback      Stuur platform-feedback naar het WBSO.ai team
   whoami        Toon wie ingelogd is (of "not_logged_in")
@@ -447,6 +448,20 @@ cmd_evidence() {
   load_env
   require_auth
 
+  # A stable external_id keeps repeated calls for the same day idempotent:
+  # the API upserts on (company, external_id), so re-running evidence for a
+  # date updates the existing entry instead of creating a duplicate. Scope
+  # it to the target user so colleagues never collide within a company.
+  local effective_user="${ARG_user_email:-${WBSO_USER:-}}"
+  local external_id="${ARG_external_id:-}"
+  if [ -z "$external_id" ]; then
+    if [ -n "$effective_user" ]; then
+      external_id="wbso-onderbouwing-${effective_user}-${ARG_date}"
+    else
+      external_id="wbso-onderbouwing-${ARG_date}"
+    fi
+  fi
+
   local body
   body=$(python3 -c '
 import json, sys
@@ -457,18 +472,28 @@ ev = {
   "ends_at": sys.argv[3] + "T17:00:00Z",
   "all_day": True,
   "source": "wbso-skill",
+  "external_id": sys.argv[4],
 }
-if len(sys.argv) > 4 and sys.argv[4]:
-    ev["external_id"] = sys.argv[4]
 if len(sys.argv) > 5 and sys.argv[5]:
-    ev["user"] = sys.argv[5]
+    ev["user_email"] = sys.argv[5]
 print(json.dumps({"evidence": ev}))
-' "$ARG_title" "$ARG_description" "$ARG_date" "${ARG_external_id:-}" "${ARG_user_email:-}")
+' "$ARG_title" "$ARG_description" "$ARG_date" "$external_id" "${ARG_user_email:-}")
 
   curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/evidence" \
     -H "Authorization: Bearer $WBSO_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$body"
+}
+
+cmd_untrack_evidence() {
+  parse_args "id" "$@"
+  : "${ARG_id:?--id verplicht}"
+
+  load_env
+  require_auth
+
+  curl -sS -X DELETE "$WBSO_API_BASE_URL/api/v1/compliance/evidence/$ARG_id" \
+    -H "Authorization: Bearer $WBSO_API_KEY"
 }
 
 cmd_suggest_project() {
@@ -535,6 +560,7 @@ main() {
     track-time) cmd_track_time "$@" ;;
     untrack-time) cmd_untrack_time "$@" ;;
     evidence) cmd_evidence "$@" ;;
+    untrack-evidence) cmd_untrack_evidence "$@" ;;
     suggest-project) cmd_suggest_project "$@" ;;
     feedback) cmd_feedback "$@" ;;
     whoami) cmd_whoami "$@" ;;
