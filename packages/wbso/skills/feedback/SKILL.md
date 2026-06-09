@@ -60,6 +60,13 @@ Anders, vraag plain tekst:
 
 Wacht op vrije tekst. Neem die letterlijk over, zonder polish.
 
+Behoud de regelstructuur. Stuur het bericht als meerregelige tekst met
+echte regeleindes (`\n`) wanneer dat de leesbaarheid helpt: zet
+opsommingen op aparte regels en scheid losse punten met een lege regel.
+Plet een gestructureerd bericht niet tot één doorlopende paragraaf. De
+portal toont het bericht met behoud van regeleindes, dus de structuur
+die je meestuurt is wat het team ziet.
+
 ## Stap 3: Versturen
 
 Claude Code zet plugin-root `bin/` in `$PATH`, dus daar werkt `wbso`
