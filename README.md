@@ -92,6 +92,10 @@ Alle skills non-interactief installeren:
 npx skills add wbso-ai/skill --all -y
 ```
 
+Skill-namen gebruiken het `wbso-` prefix (`wbso-auth`, `wbso-signup`, …)
+zodat een globale install (`-g`) niet botst met generieke namen als
+`auth` of `logout` van andere packages.
+
 Elke skill shipt een self-contained `scripts/wbso` CLI; geen aparte
 plugin- of marketplace-install nodig.
 
@@ -115,14 +119,14 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill      | Wat het doet                              |
-| ---------- | ----------------------------------------- |
-| `wbso`     | Registreer uren via een gesprek           |
-| `signup`   | Maak een nieuw WBSO.ai-account aan        |
-| `auth`     | Log in met een bestaande API key          |
-| `whoami`   | Toon het ingelogde account                |
-| `logout`   | Verwijder de lokale config                |
-| `feedback` | Stuur feedback over het platform naar het team |
+| Skill           | Wat het doet                              |
+| --------------- | ----------------------------------------- |
+| `wbso`          | Registreer uren via een gesprek           |
+| `wbso-signup`   | Maak een nieuw WBSO.ai-account aan        |
+| `wbso-auth`     | Log in met een bestaande API key          |
+| `wbso-whoami`   | Toon het ingelogde account                |
+| `wbso-logout`   | Verwijder de lokale config                |
+| `wbso-feedback` | Stuur feedback over het platform naar het team |
 
 Optioneel snelboeken: geef uren mee bij de aanroep, bv. `/wbso 4` of
 `boek 4 uur WBSO`.
@@ -155,7 +159,7 @@ npx skills update wbso-ai/skill -g
 
 Maak een account aan op
 [wbso.ai/wbso-administratie/aanmelden](https://wbso.ai/wbso-administratie/aanmelden)
-of doe het rechtstreeks vanuit de `signup` skill.
+of doe het rechtstreeks vanuit de `wbso-signup` skill.
 
 Liever full-service een aanvraag laten regelen? Meld je dan aan op
 [wbso.ai/aanmelden](https://wbso.ai/aanmelden).
@@ -192,19 +196,19 @@ packages/
         ├── wbso/
         │   ├── SKILL.md            # uren registreren
         │   └── scripts/wbso        # self-contained CLI (synced from bin/wbso)
-        ├── signup/
+        ├── wbso-signup/
         │   ├── SKILL.md            # account aanmaken
         │   └── scripts/wbso
-        ├── auth/
+        ├── wbso-auth/
         │   ├── SKILL.md            # inloggen
         │   └── scripts/wbso
-        ├── whoami/
+        ├── wbso-whoami/
         │   ├── SKILL.md            # wie ben ik
         │   └── scripts/wbso
-        ├── logout/
+        ├── wbso-logout/
         │   ├── SKILL.md            # uitloggen
         │   └── scripts/wbso
-        └── feedback/
+        └── wbso-feedback/
             ├── SKILL.md            # platform feedback
             └── scripts/wbso
 ```

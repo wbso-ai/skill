@@ -1,5 +1,5 @@
 ---
-name: logout
+name: wbso-logout
 description: 'Log uit van WBSO.ai door de lokale config te verwijderen. Gebruik wanneer de gebruiker wil uitloggen, van account wil wisselen, of zegt "ik wil uitloggen".'
 ---
 
@@ -26,7 +26,7 @@ rm -f "$HOME/.config/wbso/config" && echo "Uitgelogd"
 
 Bevestig kort:
 
-> *"Uitgelogd. Gebruik de auth skill om opnieuw in te loggen, of de
+> *"Uitgelogd. Gebruik de wbso-auth skill om opnieuw in te loggen, of de
 > wbso skill om meteen een nieuw account aan te maken."*
 
 ## Geen config? Niets te doen

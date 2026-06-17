@@ -1,6 +1,6 @@
 ---
-name: signup
-description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik de auth skill.'
+name: wbso-signup
+description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik de wbso-auth skill.'
 ---
 
 # Account aanmaken op WBSO.ai
@@ -84,7 +84,7 @@ De portal stuurt automatisch een magic-link e-mail naar het opgegeven
 adres. Vraag de gebruiker om de e-mail te openen en op de inlog-link te
 klikken. Na inloggen moet de gebruiker naar
 `Instellingen → Compliance → API keys` navigeren om een nieuwe key aan
-te maken. Vraag dán om die key en gebruik de gebundelde `auth` skill (of
+te maken. Vraag dán om die key en gebruik de gebundelde `wbso-auth` skill (of
 `wbso login --api-key <KEY>`) om die op te slaan.
 
 Bij `422` toont het response-body een `error`-veld (bijv. ongeldig

@@ -1,5 +1,5 @@
 ---
-name: feedback
+name: wbso-feedback
 description: 'Stuur feedback over het WBSO.ai platform naar het team. Gebruik wanneer de gebruiker een bug meldt, een idee/verbeterpunt heeft, een vraag over het platform stelt, een klacht of frustratie uit, of een compliment wil geven. Werkt ook anoniem zonder ingelogde sessie.'
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: whoami
+name: wbso-whoami
 description: 'Toon onder welk account en bedrijf je nu ingelogd bent bij WBSO.ai. Gebruik wanneer de gebruiker vraagt "wie ben ik", "welk account", of "ben ik nog ingelogd".'
 ---
 
@@ -43,7 +43,7 @@ Actieve projecten:
 
 Bij `not_logged_in` (één enkele regel) → meld terug:
 
-> *"Je bent niet ingelogd. Gebruik de auth skill om in te loggen of
+> *"Je bent niet ingelogd. Gebruik de wbso-auth skill om in te loggen of
 > de wbso skill om een nieuw account aan te maken."*
 
 Anders meld de gebruiker als verhaal — toon naam met email tussen

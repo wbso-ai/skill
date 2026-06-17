@@ -1,5 +1,5 @@
 ---
-name: auth
+name: wbso-auth
 description: 'Log in op WBSO.ai door een API key te plakken. Gebruik wanneer de gebruiker wil inloggen, van account wil wisselen, of zegt "ik wil opnieuw inloggen". Opent eerst de portal-pagina waar je een API key kan aanmaken.'
 ---
 

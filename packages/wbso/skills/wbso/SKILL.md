@@ -136,13 +136,13 @@ Bij twijfel: vraag kort terug.
 
 #### Bestaand account
 
-Volg de gebundelde `auth` skill — die opent de API keys-pagina in de
+Volg de gebundelde `wbso-auth` skill — die opent de API keys-pagina in de
 browser, vraagt de gebruiker de key te plakken, en slaat 'm op in de
 config. Run daarna `wbso context` opnieuw zodra de auth-flow klaar is.
 
 #### Nieuw account aanmaken
 
-Volg de gebundelde `signup` skill — die vraagt naam/email/bedrijf in één
+Volg de gebundelde `wbso-signup` skill — die vraagt naam/email/bedrijf in één
 keer, maakt het account aan, opent de browser voor de wizard, en wacht
 tot de eerste projecten aangemaakt zijn. Run daarna `wbso context`
 opnieuw.
@@ -582,7 +582,7 @@ Geen HTTP-codes oplezen.
 Als je merkt dat de gebruiker vastzit, gefrustreerd raakt, een
 vraag stelt over hoe het platform werkt, of expliciet iets zegt
 over WBSO.ai (een bug, een wens, een compliment), bied dan **één
-keer** aan om dat door te geven via de gebundelde `feedback` skill.
+keer** aan om dat door te geven via de gebundelde `wbso-feedback` skill.
 Volg die skill voor de daadwerkelijke flow.
 
 Niet pushen, niet bij elk klein vraagje, niet ongevraagd op een
@@ -590,7 +590,7 @@ soepele flow. Eén korte plain-tekst-zin volstaat:
 
 > *"Wil je dat ik dit doorgeef aan het WBSO.ai team als feedback?"*
 
-Bij "ja": delegeer naar de `feedback` skill. Bij "nee" / "later":
+Bij "ja": delegeer naar de `wbso-feedback` skill. Bij "nee" / "later":
 respecteer dat en ga door.
 
 ## Notes
