@@ -9,6 +9,10 @@
   boekt, jij blijft coden.
 </p>
 
+<p align="center">
+  <a href="https://skills.sh/wbso-ai/skill"><img src="https://skills.sh/b/wbso-ai/skill" alt="skills.sh"></a>
+</p>
+
 ---
 
 Software developers boeken hun uren nog makkelijker en direct vanuit hun

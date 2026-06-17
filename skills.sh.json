@@ -1,0 +1,21 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Uren registreren",
+      "description": "Boek WBSO-waardige uren via een kort gesprek, direct vanuit je coding agent.",
+      "skills": ["wbso"]
+    },
+    {
+      "title": "Account & toegang",
+      "description": "Maak een WBSO.ai-account aan, log in met je API key, bekijk wie je bent en log weer uit.",
+      "skills": ["wbso-signup", "wbso-auth", "wbso-whoami", "wbso-logout"]
+    },
+    {
+      "title": "Feedback",
+      "description": "Stuur feedback over het platform rechtstreeks naar het team.",
+      "skills": ["wbso-feedback"]
+    }
+  ]
+}
