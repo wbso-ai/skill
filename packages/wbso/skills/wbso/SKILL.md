@@ -34,17 +34,34 @@ Als er geen argument is meegegeven, volg de normale flow.
 
 ## Werken via de `wbso` CLI
 
-Deze plugin shipt de echte `wbso` CLI in `bin/` van de plugin. Claude
-Code zet plugin-root `bin/` in `$PATH`, dus daar kun je `wbso` direct
-aanroepen.
+Elke skill shipt een **self-contained** `scripts/wbso` naast `SKILL.md`
+(canonical bron: `packages/wbso/bin/wbso`, gesynchroniseerd via
+`bin/sync-wbso-cli`). Dat werkt na plugin-install én na
+`npx skills add wbso-ai/skill`.
 
-Codex zet plugin-root `bin/` niet gegarandeerd in `$PATH`. Voor Codex
-heeft deze skill daarom een `scripts/wbso` wrapper naast `SKILL.md`.
-Gebruik `wbso` als die in `$PATH` staat; gebruik anders de
-skill-local wrapper als `$WBSO_CLI`:
+Claude Code zet plugin-root `bin/` ook in `$PATH` (via
+`${CLAUDE_PLUGIN_ROOT}/bin/wbso`). Na `npx skills add` staat alleen de
+skill-map geïnstalleerd — daarom shipt elke skill een self-contained
+`scripts/wbso`. Resolve in deze volgorde:
 
 ```bash
-WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+WBSO_CLI="$(
+  command -v wbso 2>/dev/null ||
+  { [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/wbso" ] && printf '%s\n' "${CLAUDE_PLUGIN_ROOT}/bin/wbso"; } ||
+  find \
+    "$PWD" \
+    "$HOME/.claude/skills" \
+    "$PWD/.claude/skills" \
+    "$HOME/.cursor/skills" \
+    "$PWD/.cursor/skills" \
+    "$HOME/.agents/skills" \
+    "$PWD/.agents/skills" \
+    "$HOME/.codex/skills" \
+    "$HOME/.codex/plugins/cache/wbso-ai/wbso" \
+    "$HOME/.codex/plugins/cache" \
+    -path '*/scripts/wbso' -type f 2>/dev/null |
+  sort -V | tail -1
+)"
 test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
 "$WBSO_CLI" context
 ```
@@ -119,13 +136,13 @@ Bij twijfel: vraag kort terug.
 
 #### Bestaand account
 
-Volg de gebundelde `auth` skill — die opent de API keys-pagina in de
+Volg de gebundelde `wbso-auth` skill — die opent de API keys-pagina in de
 browser, vraagt de gebruiker de key te plakken, en slaat 'm op in de
 config. Run daarna `wbso context` opnieuw zodra de auth-flow klaar is.
 
 #### Nieuw account aanmaken
 
-Volg de gebundelde `signup` skill — die vraagt naam/email/bedrijf in één
+Volg de gebundelde `wbso-signup` skill — die vraagt naam/email/bedrijf in één
 keer, maakt het account aan, opent de browser voor de wizard, en wacht
 tot de eerste projecten aangemaakt zijn. Run daarna `wbso context`
 opnieuw.
@@ -565,7 +582,7 @@ Geen HTTP-codes oplezen.
 Als je merkt dat de gebruiker vastzit, gefrustreerd raakt, een
 vraag stelt over hoe het platform werkt, of expliciet iets zegt
 over WBSO.ai (een bug, een wens, een compliment), bied dan **één
-keer** aan om dat door te geven via de gebundelde `feedback` skill.
+keer** aan om dat door te geven via de gebundelde `wbso-feedback` skill.
 Volg die skill voor de daadwerkelijke flow.
 
 Niet pushen, niet bij elk klein vraagje, niet ongevraagd op een
@@ -573,7 +590,7 @@ soepele flow. Eén korte plain-tekst-zin volstaat:
 
 > *"Wil je dat ik dit doorgeef aan het WBSO.ai team als feedback?"*
 
-Bij "ja": delegeer naar de `feedback` skill. Bij "nee" / "later":
+Bij "ja": delegeer naar de `wbso-feedback` skill. Bij "nee" / "later":
 respecteer dat en ga door.
 
 ## Notes

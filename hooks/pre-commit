@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+staged="$(git diff --cached --name-only)"
+
+needs_sync=false
+if echo "$staged" | grep -qE '^packages/wbso/bin/wbso$'; then
+  needs_sync=true
+fi
+if echo "$staged" | grep -qE '^packages/wbso/\.claude-plugin/plugin\.json$'; then
+  needs_sync=true
+fi
+
+if $needs_sync; then
+  bin/sync-wbso-cli
+  git add packages/wbso/skills/*/scripts/wbso
+fi
+
+bin/check-wbso-cli-sync

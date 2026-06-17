@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-plugin_root="$(CDPATH= cd -- "$script_dir/../../.." && pwd)"
-
-exec env WBSO_AGENT="${WBSO_AGENT:-codex}" "$plugin_root/bin/wbso" "$@"

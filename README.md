@@ -19,11 +19,12 @@ agent een WBSO-expert die jouw aanvraag kent en helpt uren te boeken.
 Zo boek je moeiteloos jouw WBSO-waardige uren en is jouw WBSO-administratie
 altijd up-to-date en klaar voor een RVO-controle!
 
-Deze plugin lost dat op. De skill draait in jouw werk-omgeving, leest waar
-je vandaag aan bezig was (commits + lokale agent-sessies, volledig lokaal),
-beoordeelt het tegen de RVO-criteria, en boekt het direct in op WBSO.ai.
+Deze skill draait in jouw werk-omgeving, leest waar je vandaag aan bezig
+was (commits + lokale agent-sessies, volledig lokaal), beoordeelt het tegen
+de RVO-criteria, en boekt het direct in op WBSO.ai.
 
-Compatible met Claude Code en Codex.
+Compatible met Claude Code, Codex, Cursor en [70+ andere
+agents](https://skills.sh).
 
 Op onze website staat meer informatie over hoe de
 [WBSO-administratie](https://wbso.ai/wbso-administratie) werkt.
@@ -72,55 +73,43 @@ tekst — geen wrapper-laag, geen UI-omleiding.
 
 ## Installatie
 
-### Claude Code
+Via [skills.sh](https://skills.sh) — één commando voor elke ondersteunde
+agent:
 
 ```bash
-claude plugins marketplace add wbso-ai/skill
-claude plugins install wbso@wbso-ai
-claude "boek WBSO uren"
+npx skills add wbso-ai/skill
 ```
 
-Of via deze single prompt:
-
-```text
-Installeer de WBSO.ai skill wanneer je deze nog niet hebt met `claude plugins marketplace add wbso-ai/skill` en `claude plugins install wbso@wbso-ai`. Daarna de skill aanroepen om de WBSO-uren te boeken.
-```
-
-Gebruik daarna de slash-commands in Claude Code:
-
-```text
-/wbso
-/wbso:whoami
-/wbso:auth
-```
-
-### Codex
+Globaal (user-level, alle projecten):
 
 ```bash
-codex plugin marketplace add wbso-ai/skill
-codex /plugins
-codex "boek WBSO uren"
+npx skills add wbso-ai/skill -g
 ```
 
-Of via deze single prompt:
+Alle skills non-interactief installeren:
 
-```text
-Installeer de WBSO.ai plugin zelf als die nog ontbreekt met `codex plugin marketplace add wbso-ai/skill`. Alleen als handmatige activatie nodig is, vraag mij `/plugins` te gebruiken. Roep daarna direct de WBSO-skill aan om mijn uren te boeken.
+```bash
+npx skills add wbso-ai/skill --all -y
 ```
 
-Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
-nieuwe thread. Gebruik de skills expliciet met `$`:
+Skill-namen gebruiken het `wbso-` prefix (`wbso-auth`, `wbso-signup`, …)
+zodat een globale install (`-g`) niet botst met generieke namen als
+`auth` of `logout` van andere packages.
+
+Elke skill shipt een self-contained `scripts/wbso` CLI; geen aparte
+plugin- of marketplace-install nodig.
+
+Roep daarna de skill aan in gewone taal:
 
 ```text
-$wbso registreer mijn WBSO-uren van vandaag
-$wbso:whoami
-$wbso:auth log me in bij WBSO.ai
+boek mijn WBSO-uren van vandaag
 ```
 
-Of vraag het in gewone taal:
+Of expliciet — afhankelijk van je agent:
 
 ```text
-Gebruik WBSO.ai om mijn WBSO-uren van vandaag te registreren.
+/wbso              # Claude Code
+$wbso              # Codex
 ```
 
 De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
@@ -130,18 +119,17 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill      | Claude Code      | Codex            | Wat het doet                              |
-| ---------- | ---------------- | ---------------- | ----------------------------------------- |
-| `wbso`     | `/wbso`          | `$wbso`          | Registreer uren via een gesprek           |
-| `signup`   | `/wbso:signup`   | `$wbso:signup`   | Maak een nieuw WBSO.ai-account aan        |
-| `auth`     | `/wbso:auth`     | `$wbso:auth`     | Log in met een bestaande API key          |
-| `whoami`   | `/wbso:whoami`   | `$wbso:whoami`   | Toon het ingelogde account                |
-| `logout`   | `/wbso:logout`   | `$wbso:logout`   | Verwijder de lokale config                |
-| `feedback` | `/wbso:feedback` | `$wbso:feedback` | Stuur feedback over het platform naar het team |
+| Skill           | Wat het doet                              |
+| --------------- | ----------------------------------------- |
+| `wbso`          | Registreer uren via een gesprek           |
+| `wbso-signup`   | Maak een nieuw WBSO.ai-account aan        |
+| `wbso-auth`     | Log in met een bestaande API key          |
+| `wbso-whoami`   | Toon het ingelogde account                |
+| `wbso-logout`   | Verwijder de lokale config                |
+| `wbso-feedback` | Stuur feedback over het platform naar het team |
 
-Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
-Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
-vandaag.
+Optioneel snelboeken: geef uren mee bij de aanroep, bv. `/wbso 4` of
+`boek 4 uur WBSO`.
 
 ## Privacy
 
@@ -158,17 +146,20 @@ trainingsmateriaal.
 ## Updaten
 
 ```bash
-claude plugins update wbso@wbso-ai
-codex plugin marketplace upgrade wbso-ai
+npx skills update wbso-ai/skill
 ```
 
-Daarna Claude Code of Codex herstarten.
+Globaal:
+
+```bash
+npx skills update wbso-ai/skill -g
+```
 
 ## Geen account? Start hier
 
 Maak een account aan op
 [wbso.ai/wbso-administratie/aanmelden](https://wbso.ai/wbso-administratie/aanmelden)
-of doe het rechtstreeks vanuit de `signup` skill.
+of doe het rechtstreeks vanuit de `wbso-signup` skill.
 
 Liever full-service een aanvraag laten regelen? Meld je dan aan op
 [wbso.ai/aanmelden](https://wbso.ai/aanmelden).
@@ -193,37 +184,67 @@ dan de eerste 100 uur kosteloos zodat je het kan uitproberen.
 ```
 .claude-plugin/marketplace.json     # Claude marketplace metadata
 .agents/plugins/marketplace.json    # Codex marketplace metadata
+bin/
+├── sync-wbso-cli                   # kopieer bin/wbso naar elke skill
+└── check-wbso-cli-sync             # CI-check dat sync up-to-date is
 packages/
 └── wbso/
     ├── .claude-plugin/plugin.json  # Claude plugin metadata
     ├── .codex-plugin/plugin.json   # Codex plugin metadata
-    ├── bin/wbso                    # CLI (bash)
+    ├── bin/wbso                    # Canonical CLI (bash)
     └── skills/
         ├── wbso/
         │   ├── SKILL.md            # uren registreren
-        │   └── scripts/wbso        # Codex wrapper naar ../../bin/wbso
-        ├── signup/
+        │   └── scripts/wbso        # self-contained CLI (synced from bin/wbso)
+        ├── wbso-signup/
         │   ├── SKILL.md            # account aanmaken
         │   └── scripts/wbso
-        ├── auth/
+        ├── wbso-auth/
         │   ├── SKILL.md            # inloggen
         │   └── scripts/wbso
-        ├── whoami/
+        ├── wbso-whoami/
         │   ├── SKILL.md            # wie ben ik
         │   └── scripts/wbso
-        ├── logout/
+        ├── wbso-logout/
         │   ├── SKILL.md            # uitloggen
         │   └── scripts/wbso
-        └── feedback/
+        └── wbso-feedback/
             ├── SKILL.md            # platform feedback
             └── scripts/wbso
 ```
 
-Claude Code voegt `bin/` van de plugin toe aan de Bash `PATH`, dus
-skills kunnen daar `wbso` als bare command gebruiken. Codex documenteert
-geen plugin-root `bin/` PATH; voor Codex exposeert elke skill daarom een
-standaard Agent Skills `scripts/wbso` wrapper die naar dezelfde
-plugin-root binary doorstart.
+### CLI en versie
+
+Twee lagen — het how-plugins-work `build`/`check`-patroon:
+
+| Rol | Pad |
+|-----|-----|
+| **Canonical CLI** | `packages/wbso/bin/wbso` — hier bewerk je |
+| **Versie** | `packages/wbso/.claude-plugin/plugin.json` → `version` |
+| **Generated targets** | `packages/wbso/skills/*/scripts/wbso` — kopie + ingebakken `WBSO_SKILL_VERSION` |
+
+`npx skills add` installeert alleen de skill-map. De versie zit daarom
+**in** elke `scripts/wbso` (regel 2: `WBSO_SKILL_VERSION="1.27"`), niet
+in een apart `plugin.json` naast de skill. Sync leest de versie uit
+`plugin.json` en stampt die in.
+
+Na wijzigingen aan de canonical CLI **of** aan `version` in
+`plugin.json`:
+
+```bash
+bin/sync-wbso-cli
+bin/check-wbso-cli-sync
+git add packages/wbso/skills/*/scripts/wbso
+```
+
+Met de repo-hook gebeurt sync automatisch bij commit:
+
+```bash
+git config core.hooksPath hooks
+```
+
+CI draait `bin/check-wbso-cli-sync` — commit nooit alleen
+`packages/wbso/bin/wbso` zonder gesyncte skill-scripts.
 
 ### Lokaal testen
 
@@ -266,12 +287,16 @@ naar de config die na signup geschreven wordt.
 bin/release
 ```
 
-Berekent de nieuwe versie op basis van commit-count (`1.<commit-count>`),
-bumpt `version` in zowel `packages/wbso/.claude-plugin/plugin.json` als
-`packages/wbso/.codex-plugin/plugin.json`, maakt een release-commit +
-tag (`v1.N`), pusht naar `origin/main`. Zonder expliciete `version` in
-`plugin.json` zou elke commit als nieuwe versie tellen — daarom een
-bewuste bump.
+Doet in één keer:
+
+1. Berekent versie (`1.<commit-count>`) en zet die in beide
+   `plugin.json`-manifests
+2. Roept `bin/sync-wbso-cli` aan — stampt `WBSO_SKILL_VERSION` in alle
+   skill-scripts
+3. Commit, tag (`v1.N`), push, GitHub Release
+
+Handmatig sync draaien hoef je bij release dus niet — wel bij gewone
+commits die `bin/wbso` of `version` wijzigen (of via de pre-commit hook).
 
 ### Wisselen tussen GitHub-versie en lokale dev-versie
 
