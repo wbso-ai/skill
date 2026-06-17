@@ -209,23 +209,38 @@ packages/
             └── scripts/wbso
 ```
 
-Claude Code voegt `bin/` van de plugin toe aan de Bash `PATH`, dus
-skills kunnen daar `wbso` als bare command gebruiken. Voor
-`npx skills`-installs en Codex exposeert elke skill een self-contained
-`scripts/wbso` (gesynchroniseerd vanuit `packages/wbso/bin/wbso` via
-`bin/sync-wbso-cli`).
+### CLI en versie
 
-Na wijzigingen aan `packages/wbso/bin/wbso`:
+Twee lagen — het how-plugins-work `build`/`check`-patroon:
+
+| Rol | Pad |
+|-----|-----|
+| **Canonical CLI** | `packages/wbso/bin/wbso` — hier bewerk je |
+| **Versie** | `packages/wbso/.claude-plugin/plugin.json` → `version` |
+| **Generated targets** | `packages/wbso/skills/*/scripts/wbso` — kopie + ingebakken `WBSO_SKILL_VERSION` |
+
+`npx skills add` installeert alleen de skill-map. De versie zit daarom
+**in** elke `scripts/wbso` (regel 2: `WBSO_SKILL_VERSION="1.27"`), niet
+in een apart `plugin.json` naast de skill. Sync leest de versie uit
+`plugin.json` en stampt die in.
+
+Na wijzigingen aan de canonical CLI **of** aan `version` in
+`plugin.json`:
 
 ```bash
-bin/sync-wbso-cli          # kopieer CLI naar elke skill/scripts/wbso
-bin/check-wbso-cli-sync    # CI-check: faalt als sync ontbreekt
+bin/sync-wbso-cli
+bin/check-wbso-cli-sync
+git add packages/wbso/skills/*/scripts/wbso
 ```
 
-Dit volgt hetzelfde `build`/`check`-contract als multi-agent
-marketplaces (zie o.a. [how-plugins-work](https://github.com/epologee/laicluse-agent-fieldkit)):
-canonical bron in `bin/`, skill-local kopie voor portable installs via
-`npx skills add`.
+Met de repo-hook gebeurt sync automatisch bij commit:
+
+```bash
+git config core.hooksPath hooks
+```
+
+CI draait `bin/check-wbso-cli-sync` — commit nooit alleen
+`packages/wbso/bin/wbso` zonder gesyncte skill-scripts.
 
 ### Lokaal testen
 
@@ -268,12 +283,16 @@ naar de config die na signup geschreven wordt.
 bin/release
 ```
 
-Berekent de nieuwe versie op basis van commit-count (`1.<commit-count>`),
-bumpt `version` in zowel `packages/wbso/.claude-plugin/plugin.json` als
-`packages/wbso/.codex-plugin/plugin.json`, maakt een release-commit +
-tag (`v1.N`), pusht naar `origin/main`. Zonder expliciete `version` in
-`plugin.json` zou elke commit als nieuwe versie tellen — daarom een
-bewuste bump.
+Doet in één keer:
+
+1. Berekent versie (`1.<commit-count>`) en zet die in beide
+   `plugin.json`-manifests
+2. Roept `bin/sync-wbso-cli` aan — stampt `WBSO_SKILL_VERSION` in alle
+   skill-scripts
+3. Commit, tag (`v1.N`), push, GitHub Release
+
+Handmatig sync draaien hoef je bij release dus niet — wel bij gewone
+commits die `bin/wbso` of `version` wijzigen (of via de pre-commit hook).
 
 ### Wisselen tussen GitHub-versie en lokale dev-versie
 
