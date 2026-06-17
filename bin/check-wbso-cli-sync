@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE="$ROOT/packages/wbso/bin/wbso"
+MANIFEST="$ROOT/packages/wbso/.claude-plugin/plugin.json"
+
+if [[ ! -f "$SOURCE" ]] || [[ ! -f "$MANIFEST" ]]; then
+  echo "Canonical CLI of manifest ontbreekt" >&2
+  exit 1
+fi
+
+VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version","unknown"))' "$MANIFEST")"
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
+
+render_expected() {
+  {
+    echo '#!/usr/bin/env bash'
+    echo "WBSO_SKILL_VERSION=\"$VERSION\""
+    tail -n +2 "$SOURCE"
+  }
+}
+
+for scripts_dir in "$ROOT"/packages/wbso/skills/*/scripts; do
+  [[ -d "$scripts_dir" ]] || continue
+  target="$scripts_dir/wbso"
+
+  if [[ ! -f "$target" ]]; then
+    echo "Ontbreekt: $target" >&2
+    exit 1
+  fi
+
+  if grep -q 'plugin_root.*bin/wbso' "$target"; then
+    echo "Nog een shim (run bin/sync-wbso-cli): $target" >&2
+    exit 1
+  fi
+
+  expected="$TMPDIR/$(basename "$(dirname "$scripts_dir")")"
+  render_expected > "$expected"
+
+  if ! cmp -s "$target" "$expected"; then
+    echo "Out of sync: $target (run bin/sync-wbso-cli)" >&2
+    exit 1
+  fi
+done
+
+echo "All skill CLI scripts are in sync"

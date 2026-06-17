@@ -1,7 +1,577 @@
 #!/usr/bin/env bash
+WBSO_SKILL_VERSION="1.27"
+# wbso — thin CLI wrapper voor de WBSO.ai compliance API.
+#
+# Subcommands: signup, login, context, track-time, untrack-time, evidence, untrack-evidence, suggest-project, feedback, whoami
+# Config wordt geladen uit ~/.config/wbso/.env.local (optionele dev-override)
+# en ~/.config/wbso/config (api key, email, base url).
+
 set -euo pipefail
 
-script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-plugin_root="$(CDPATH= cd -- "$script_dir/../../.." && pwd)"
+CONFIG_DIR="$HOME/.config/wbso"
+CONFIG_FILE="$CONFIG_DIR/config"
+ENV_LOCAL="$CONFIG_DIR/.env.local"
+DEFAULT_BASE_URL="https://portal.wbso.ai"
 
-exec env WBSO_AGENT="${WBSO_AGENT:-codex}" "$plugin_root/bin/wbso" "$@"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_JSON="$SCRIPT_DIR/../.claude-plugin/plugin.json"
+
+detect_agent() {
+  if [ -n "${WBSO_AGENT:-}" ]; then
+    echo "$WBSO_AGENT"
+  elif [ -n "${CLAUDECODE:-}" ]; then
+    echo "claude"
+  elif [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_SANDBOX:-}" ]; then
+    echo "codex"
+  else
+    echo "unknown"
+  fi
+}
+
+skill_version() {
+  if [ -n "${WBSO_SKILL_VERSION:-}" ]; then
+    echo "$WBSO_SKILL_VERSION"
+    return
+  fi
+  [ -f "$PLUGIN_JSON" ] || { echo "unknown"; return; }
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version","unknown"))' "$PLUGIN_JSON" 2>/dev/null || echo "unknown"
+}
+
+load_env() {
+  [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+  [ -f "$ENV_LOCAL" ] && source "$ENV_LOCAL"
+  WBSO_API_BASE_URL="${WBSO_API_BASE_URL:-$DEFAULT_BASE_URL}"
+}
+
+require_auth() {
+  if [ -z "${WBSO_API_KEY:-}" ]; then
+    echo "error: geen WBSO_API_KEY in $CONFIG_FILE. Run 'wbso signup' of 'wbso login' eerst." >&2
+    exit 2
+  fi
+}
+
+# Like require_auth but for context: output structured "not_logged_in"
+# markdown instead of an error, so the skill can branch on the response.
+not_logged_in_md() {
+  cat <<'EOF'
+<status>not_logged_in</status>
+
+Niet ingelogd. Run `wbso signup` of `wbso login`.
+EOF
+}
+
+write_config() {
+  local email="$1"
+  local api_key="$2"
+  mkdir -p "$CONFIG_DIR"
+  umask 077
+  cat > "$CONFIG_FILE" <<EOF
+WBSO_USER="$email"
+WBSO_API_KEY="$api_key"
+WBSO_API_BASE_URL="$WBSO_API_BASE_URL"
+EOF
+  chmod 600 "$CONFIG_FILE"
+}
+
+usage() {
+  cat >&2 <<EOF
+Usage: wbso <command> [options]
+
+Commands:
+  signup        Maak een nieuw WBSO.ai account aan
+  login         Sla bestaande api-key + email op in config
+  context       Haal compliance-context op (projects, time_entries, alerts, instructions)
+  track-time    Registreer uren op een project
+  untrack-time  Verwijder een urenregistratie
+  evidence      Voeg onderbouwing toe (idempotent per dag)
+  untrack-evidence  Verwijder een onderbouwing
+  suggest-project  Meld een mogelijk nieuw WBSO-project bij de beheerder
+  feedback      Stuur platform-feedback naar het WBSO.ai team
+  whoami        Toon wie ingelogd is (of "not_logged_in")
+
+Run 'wbso <command> --help' voor opties per command.
+EOF
+  exit 1
+}
+
+# Read --flag value pairs into named bash variables.
+# Usage: parse_args "key1 key2 key3" "$@"
+parse_args() {
+  local allowed="$1"; shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --help|-h)
+        echo "Allowed flags: $allowed" >&2; exit 1 ;;
+      --*=*)
+        local key="${1#--}"; key="${key%%=*}"
+        local val="${1#*=}"
+        eval "ARG_${key//-/_}=\"\$val\""
+        ;;
+      --*)
+        local key="${1#--}"
+        shift
+        eval "ARG_${key//-/_}=\"\$1\""
+        ;;
+      *)
+        echo "error: onbekend argument '$1'" >&2; exit 2 ;;
+    esac
+    shift
+  done
+}
+
+cmd_signup() {
+  parse_args "first-name last-name email company-name" "$@"
+  : "${ARG_first_name:?--first-name verplicht}"
+  : "${ARG_last_name:?--last-name verplicht}"
+  : "${ARG_email:?--email verplicht}"
+  : "${ARG_company_name:?--company-name verplicht}"
+
+  load_env
+
+  local response
+  response=$(curl -sS -X POST -H "Accept: application/json" \
+    --data-urlencode "email=$ARG_email" \
+    --data-urlencode "first_name=$ARG_first_name" \
+    --data-urlencode "last_name=$ARG_last_name" \
+    --data-urlencode "company_name=$ARG_company_name" \
+    --data-urlencode "utm_source=agent_skill" \
+    --data-urlencode "utm_medium=skill" \
+    "$WBSO_API_BASE_URL/signup")
+
+  local existing_account
+  existing_account=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("existing_account",""))')
+
+  if [ "$existing_account" = "True" ]; then
+    echo "$response"
+    exit 2
+  fi
+
+  local api_key
+  api_key=$(echo "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("api_key",""))')
+
+  if [ -z "$api_key" ]; then
+    echo "$response"
+    exit 1
+  fi
+
+  write_config "$ARG_email" "$api_key"
+  echo "$response"
+}
+
+cmd_login() {
+  parse_args "api-key" "$@"
+  : "${ARG_api_key:?--api-key verplicht}"
+
+  load_env
+  WBSO_API_KEY="$ARG_api_key"
+
+  local tmp
+  tmp=$(mktemp)
+  local status
+  status=$(curl -sS -o "$tmp" -w '%{http_code}' \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    "$WBSO_API_BASE_URL/api/v1/compliance/context.md?date=$(date +%F)")
+
+  if [ "$status" != "200" ]; then
+    rm -f "$tmp"
+    echo "error: api-key niet geldig (status $status)" >&2
+    exit 1
+  fi
+
+  # Email en bedrijf staan in de respons als "**Gebruiker**: ..." en "**Bedrijf**: ..."
+  local email company
+  email=$(grep -m1 '^\*\*Gebruiker\*\*:' "$tmp" | sed 's/^\*\*Gebruiker\*\*: //')
+  company=$(grep -m1 '^\*\*Bedrijf\*\*:' "$tmp" | sed 's/^\*\*Bedrijf\*\*: //')
+  rm -f "$tmp"
+
+  if [ -z "$email" ]; then
+    echo "error: kon email niet bepalen uit context-respons" >&2
+    exit 1
+  fi
+
+  write_config "$email" "$ARG_api_key"
+  if [ -n "$company" ]; then
+    echo "ok ($email · $company)"
+  else
+    echo "ok ($email)"
+  fi
+}
+
+cmd_context() {
+  parse_args "date user-email agent" "$@"
+  load_env
+
+  if [ -z "${WBSO_API_KEY:-}" ]; then
+    not_logged_in_md
+    return 0
+  fi
+
+  local date="${ARG_date:-$(date +%F)}"
+  local agent="${ARG_agent:-$(detect_agent)}"
+  local version
+  version="$(skill_version)"
+  local extra=""
+  [ -n "${ARG_user_email:-}" ] && extra="--data-urlencode user_email=$ARG_user_email"
+
+  local tmp
+  tmp=$(mktemp)
+  local status
+  # shellcheck disable=SC2086
+  status=$(curl -sS -o "$tmp" -w '%{http_code}' \
+    -G -H "Authorization: Bearer $WBSO_API_KEY" \
+    --data-urlencode "date=$date" \
+    --data-urlencode "agent=$agent" \
+    --data-urlencode "skill_version=$version" \
+    $extra \
+    "$WBSO_API_BASE_URL/api/v1/compliance/context.md")
+
+  if [ "$status" = "401" ] || [ "$status" = "403" ]; then
+    rm -f "$tmp"
+    not_logged_in_md
+    return 0
+  fi
+
+  cat "$tmp"
+  rm -f "$tmp"
+
+  append_local_signals
+}
+
+append_local_signals() {
+  append_git_commits_today
+  append_claude_sessions_today
+  append_codex_sessions_today
+}
+
+append_git_commits_today() {
+  git rev-parse --git-dir >/dev/null 2>&1 || return 0
+  local log
+  log=$(git log --all --since=midnight --pretty=format:'## %h (%an) %aI%n%n%s%n%n%b' --stat=200 2>/dev/null)
+  [ -z "$log" ] && return 0
+  echo
+  echo "<git_commits_today cwd=\"$(pwd)\">"
+  echo "$log"
+  echo "</git_commits_today>"
+}
+
+append_claude_sessions_today() {
+  local slug="${PWD//\//-}"
+  slug="${slug//./-}"
+  local dir="$HOME/.claude/projects/$slug"
+  [ -d "$dir" ] || return 0
+
+  local today
+  today="$(date +%F)"
+  local files
+  files=$(find "$dir" -maxdepth 1 -name '*.jsonl' -newermt "$today" 2>/dev/null)
+  [ -z "$files" ] && return 0
+
+  echo
+  echo "<claude_user_prompts_today cwd=\"$(pwd)\">"
+  echo "Alleen prompts die de gebruiker zelf naar Claude stuurde (geen"
+  echo "assistant-antwoorden, geen tool-calls). Eén regel per prompt."
+  echo "Gebruik dit als signaal voor waar de gebruiker vandaag mee"
+  echo "bezig was."
+  echo
+  echo "$files" | while read -r f; do
+    [ -f "$f" ] || continue
+    python3 - "$f" <<'PY'
+import json, sys
+
+SKIP_PREFIXES = ("Base directory", "<command-message>", "<command-name>",
+                 "<local-command-", "<system-reminder>")
+
+def echo(text):
+    text = text.strip()
+    if not text or any(text.startswith(p) for p in SKIP_PREFIXES):
+        return
+    print("-", text.replace("\n", " "))
+
+for line in open(sys.argv[1], errors="replace"):
+    try:
+        d = json.loads(line)
+    except Exception:
+        continue
+    msg = d.get("message", {})
+    if msg.get("role") != "user":
+        continue
+    content = msg.get("content")
+    if isinstance(content, str):
+        echo(content)
+    elif isinstance(content, list):
+        for c in content:
+            if c.get("type") == "text":
+                echo(c.get("text", ""))
+PY
+  done
+  echo "</claude_user_prompts_today>"
+}
+
+append_codex_sessions_today() {
+  local today
+  today="$(date +%F)"
+
+  local dir="$HOME/.codex/sessions/${today:0:4}/${today:5:2}/${today:8:2}"
+  [ -d "$dir" ] || return 0
+
+  local files
+  files=$(find "$dir" -maxdepth 1 -name '*.jsonl' -newermt "$today" 2>/dev/null)
+  [ -z "$files" ] && return 0
+
+  local prompts
+  prompts=$(echo "$files" | while read -r f; do
+    [ -f "$f" ] || continue
+    python3 - "$(pwd)" "$f" <<'PY'
+import json, sys
+
+target_cwd, path = sys.argv[1], sys.argv[2]
+cwd = None
+messages = []
+
+for line in open(path, errors="replace"):
+    try:
+        d = json.loads(line)
+    except Exception:
+        continue
+
+    if d.get("type") == "session_meta":
+        cwd = (d.get("payload") or {}).get("cwd")
+        continue
+
+    payload = d.get("payload") or {}
+    if d.get("type") == "event_msg" and payload.get("type") == "user_message":
+        text = (payload.get("message") or "").strip()
+        if text:
+            messages.append(text)
+
+if cwd != target_cwd:
+    sys.exit(0)
+
+for text in messages:
+    print("-", " ".join(text.split())[:500])
+PY
+  done)
+
+  [ -z "$prompts" ] && return 0
+
+  echo
+  echo "<codex_user_prompts_today cwd=\"$(pwd)\">"
+  echo "Alleen prompts die de gebruiker zelf naar Codex stuurde in deze"
+  echo "repository vandaag (geen assistant-antwoorden, geen tool-calls)."
+  echo "Gebruik dit als signaal voor waar de gebruiker vandaag mee bezig was."
+  echo
+  echo "$prompts"
+  echo "</codex_user_prompts_today>"
+}
+
+cmd_track_time() {
+  parse_args "project date duration user-email" "$@"
+  : "${ARG_project:?--project verplicht}"
+  : "${ARG_date:?--date verplicht}"
+  : "${ARG_duration:?--duration verplicht}"
+
+  load_env
+  require_auth
+
+  local body
+  body=$(python3 -c '
+import json, sys
+entry = {"project": sys.argv[1], "date": sys.argv[2], "duration": float(sys.argv[3])}
+if len(sys.argv) > 4 and sys.argv[4]:
+    entry["user"] = sys.argv[4]
+print(json.dumps({"time_entry": entry}))
+' "$ARG_project" "$ARG_date" "$ARG_duration" "${ARG_user_email:-}")
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/time_entries" \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
+cmd_whoami() {
+  load_env
+
+  if [ -z "${WBSO_API_KEY:-}" ]; then
+    echo "not_logged_in"
+    return 0
+  fi
+
+  local tmp
+  tmp=$(mktemp)
+  local status
+  status=$(curl -sS -o "$tmp" -w '%{http_code}' \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    "$WBSO_API_BASE_URL/api/v1/compliance/context.md?date=$(date +%F)")
+
+  if [ "$status" != "200" ]; then
+    rm -f "$tmp"
+    echo "not_logged_in"
+    return 0
+  fi
+
+  python3 - "$tmp" <<'PY'
+import re, sys
+
+text = open(sys.argv[1]).read()
+user = re.search(r"^\*\*Gebruiker\*\*:\s*(.+)$", text, re.M)
+company = re.search(r"^\*\*Bedrijf\*\*:\s*(.+)$", text, re.M)
+
+print((user.group(1).strip() if user else "(onbekend)") +
+      (" · " + company.group(1).strip() if company else ""))
+
+blocks = re.findall(r'<project [^>]*slug="([^"]+)"[^>]*>(.*?)</project>', text, re.S)
+if blocks:
+    print("Actieve projecten:")
+    for slug, body in blocks:
+        title_m = re.search(r"# Projecttitel\s*\n\s*(.+)", body)
+        quota_m = re.search(r"# Aantal uren werknemers\s*\n\s*(\d+)", body)
+        title = title_m.group(1).strip() if title_m else "(geen titel)"
+        quota = quota_m.group(1).strip() if quota_m else "?"
+        print(f"  - {title} ({quota} uur) [{slug}]")
+PY
+
+  rm -f "$tmp"
+}
+
+cmd_untrack_time() {
+  parse_args "id" "$@"
+  : "${ARG_id:?--id verplicht}"
+
+  load_env
+  require_auth
+
+  curl -sS -X DELETE "$WBSO_API_BASE_URL/api/v1/compliance/time_entries/$ARG_id" \
+    -H "Authorization: Bearer $WBSO_API_KEY"
+}
+
+cmd_evidence() {
+  parse_args "title description date external-id user-email" "$@"
+  : "${ARG_title:?--title verplicht}"
+  : "${ARG_description:?--description verplicht}"
+  : "${ARG_date:?--date verplicht}"
+
+  load_env
+  require_auth
+
+  # A stable external_id keeps repeated calls for the same day idempotent:
+  # the API upserts on (company, external_id), so re-running evidence for a
+  # date updates the existing entry instead of creating a duplicate. Scope
+  # it to the target user so colleagues never collide within a company.
+  local effective_user="${ARG_user_email:-${WBSO_USER:-}}"
+  local external_id="${ARG_external_id:-}"
+  if [ -z "$external_id" ]; then
+    if [ -n "$effective_user" ]; then
+      external_id="wbso-onderbouwing-${effective_user}-${ARG_date}"
+    else
+      external_id="wbso-onderbouwing-${ARG_date}"
+    fi
+  fi
+
+  local body
+  body=$(python3 -c '
+import json, sys
+ev = {
+  "title": sys.argv[1],
+  "description": sys.argv[2],
+  "starts_at": sys.argv[3] + "T09:00:00Z",
+  "ends_at": sys.argv[3] + "T17:00:00Z",
+  "all_day": True,
+  "source": "wbso-skill",
+  "external_id": sys.argv[4],
+}
+if len(sys.argv) > 5 and sys.argv[5]:
+    ev["user_email"] = sys.argv[5]
+print(json.dumps({"evidence": ev}))
+' "$ARG_title" "$ARG_description" "$ARG_date" "$external_id" "${ARG_user_email:-}")
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/evidence" \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
+cmd_untrack_evidence() {
+  parse_args "id" "$@"
+  : "${ARG_id:?--id verplicht}"
+
+  load_env
+  require_auth
+
+  curl -sS -X DELETE "$WBSO_API_BASE_URL/api/v1/compliance/evidence/$ARG_id" \
+    -H "Authorization: Bearer $WBSO_API_KEY"
+}
+
+cmd_suggest_project() {
+  parse_args "description" "$@"
+  : "${ARG_description:?--description verplicht}"
+
+  load_env
+  require_auth
+
+  local body
+  body=$(python3 -c '
+import json, sys
+print(json.dumps({"project_suggestion": {"description": sys.argv[1]}}))
+' "$ARG_description")
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/project_suggestions" \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
+cmd_feedback() {
+  parse_args "message category context source" "$@"
+  : "${ARG_message:?--message verplicht}"
+  : "${ARG_category:?--category verplicht (bug, idea, question, compliment, complaint of other)}"
+
+  load_env
+
+  local body
+  body=$(python3 -c '
+import json, sys
+payload = {
+    "message": sys.argv[1],
+    "category": sys.argv[2],
+    "source": sys.argv[3] or "skill",
+}
+ctx = sys.argv[4]
+if ctx:
+    try:
+        payload["context"] = json.loads(ctx)
+    except json.JSONDecodeError:
+        payload["context"] = {"raw": ctx}
+print(json.dumps({"feedback": payload}))
+' "$ARG_message" "$ARG_category" "${ARG_source:-}" "${ARG_context:-}")
+
+  local auth_header=()
+  if [ -n "${WBSO_API_KEY:-}" ]; then
+    auth_header=(-H "Authorization: Bearer $WBSO_API_KEY")
+  fi
+
+  curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/feedbacks" \
+    "${auth_header[@]}" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
+main() {
+  [ $# -lt 1 ] && usage
+  local cmd="$1"; shift
+  case "$cmd" in
+    signup) cmd_signup "$@" ;;
+    login) cmd_login "$@" ;;
+    context) cmd_context "$@" ;;
+    track-time) cmd_track_time "$@" ;;
+    untrack-time) cmd_untrack_time "$@" ;;
+    evidence) cmd_evidence "$@" ;;
+    untrack-evidence) cmd_untrack_evidence "$@" ;;
+    suggest-project) cmd_suggest_project "$@" ;;
+    feedback) cmd_feedback "$@" ;;
+    whoami) cmd_whoami "$@" ;;
+    -h|--help|help) usage ;;
+    *) echo "error: onbekend command '$cmd'" >&2; usage ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE="$ROOT/packages/wbso/bin/wbso"
+MANIFEST="$ROOT/packages/wbso/.claude-plugin/plugin.json"
+
+if [[ ! -f "$SOURCE" ]]; then
+  echo "Canonical CLI ontbreekt: $SOURCE" >&2
+  exit 1
+fi
+
+if [[ ! -f "$MANIFEST" ]]; then
+  echo "Plugin manifest ontbreekt: $MANIFEST" >&2
+  exit 1
+fi
+
+VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version","unknown"))' "$MANIFEST")"
+COUNT=0
+
+for scripts_dir in "$ROOT"/packages/wbso/skills/*/scripts; do
+  [[ -d "$scripts_dir" ]] || continue
+  target="$scripts_dir/wbso"
+  {
+    echo '#!/usr/bin/env bash'
+    echo "WBSO_SKILL_VERSION=\"$VERSION\""
+    tail -n +2 "$SOURCE"
+  } > "$target"
+  chmod +x "$target"
+  COUNT=$((COUNT + 1))
+done
+
+echo "Synced wbso CLI v$VERSION to $COUNT skill script(s)"

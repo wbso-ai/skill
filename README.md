@@ -108,6 +108,15 @@ Of via deze single prompt:
 Installeer de WBSO.ai plugin zelf als die nog ontbreekt met `codex plugin marketplace add wbso-ai/skill`. Alleen als handmatige activatie nodig is, vraag mij `/plugins` te gebruiken. Roep daarna direct de WBSO-skill aan om mijn uren te boeken.
 ```
 
+### skills.sh (Claude Code, Codex, Cursor, en 70+ agents)
+
+```bash
+npx skills add wbso-ai/skill
+```
+
+Project-lokaal of globaal (`-g`). Elke skill shipt een self-contained
+`scripts/wbso` CLI — geen aparte plugin-install nodig.
+
 Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
 nieuwe thread. Gebruik de skills expliciet met `$`:
 
@@ -193,15 +202,18 @@ dan de eerste 100 uur kosteloos zodat je het kan uitproberen.
 ```
 .claude-plugin/marketplace.json     # Claude marketplace metadata
 .agents/plugins/marketplace.json    # Codex marketplace metadata
+bin/
+├── sync-wbso-cli                   # kopieer bin/wbso naar elke skill
+└── check-wbso-cli-sync             # CI-check dat sync up-to-date is
 packages/
 └── wbso/
     ├── .claude-plugin/plugin.json  # Claude plugin metadata
     ├── .codex-plugin/plugin.json   # Codex plugin metadata
-    ├── bin/wbso                    # CLI (bash)
+    ├── bin/wbso                    # Canonical CLI (bash)
     └── skills/
         ├── wbso/
         │   ├── SKILL.md            # uren registreren
-        │   └── scripts/wbso        # Codex wrapper naar ../../bin/wbso
+        │   └── scripts/wbso        # self-contained CLI (synced from bin/wbso)
         ├── signup/
         │   ├── SKILL.md            # account aanmaken
         │   └── scripts/wbso
@@ -220,10 +232,22 @@ packages/
 ```
 
 Claude Code voegt `bin/` van de plugin toe aan de Bash `PATH`, dus
-skills kunnen daar `wbso` als bare command gebruiken. Codex documenteert
-geen plugin-root `bin/` PATH; voor Codex exposeert elke skill daarom een
-standaard Agent Skills `scripts/wbso` wrapper die naar dezelfde
-plugin-root binary doorstart.
+skills kunnen daar `wbso` als bare command gebruiken. Voor
+`npx skills`-installs en Codex exposeert elke skill een self-contained
+`scripts/wbso` (gesynchroniseerd vanuit `packages/wbso/bin/wbso` via
+`bin/sync-wbso-cli`).
+
+Na wijzigingen aan `packages/wbso/bin/wbso`:
+
+```bash
+bin/sync-wbso-cli          # kopieer CLI naar elke skill/scripts/wbso
+bin/check-wbso-cli-sync    # CI-check: faalt als sync ontbreekt
+```
+
+Dit volgt hetzelfde `build`/`check`-contract als multi-agent
+marketplaces (zie o.a. [how-plugins-work](https://github.com/epologee/laicluse-agent-fieldkit)):
+canonical bron in `bin/`, skill-local kopie voor portable installs
+(`npx skills add`), plugin-root `$PATH` voor Claude Code.
 
 ### Lokaal testen
 

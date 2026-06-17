@@ -28,6 +28,10 @@ detect_agent() {
 }
 
 skill_version() {
+  if [ -n "${WBSO_SKILL_VERSION:-}" ]; then
+    echo "$WBSO_SKILL_VERSION"
+    return
+  fi
   [ -f "$PLUGIN_JSON" ] || { echo "unknown"; return; }
   python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version","unknown"))' "$PLUGIN_JSON" 2>/dev/null || echo "unknown"
 }

@@ -44,7 +44,9 @@ for manifest in "${manifests[@]}"; do
   mv "${tmp}" "${manifest}"
 done
 
-git add "${manifests[@]}"
+bin/sync-wbso-cli
+
+git add "${manifests[@]}" packages/wbso/skills/*/scripts/wbso
 git commit -m "Release ${tag}"
 git tag -a "${tag}" -m "Release ${tag}"
 git push origin main

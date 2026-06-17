@@ -34,17 +34,34 @@ Als er geen argument is meegegeven, volg de normale flow.
 
 ## Werken via de `wbso` CLI
 
-Deze plugin shipt de echte `wbso` CLI in `bin/` van de plugin. Claude
-Code zet plugin-root `bin/` in `$PATH`, dus daar kun je `wbso` direct
-aanroepen.
+Elke skill shipt een **self-contained** `scripts/wbso` naast `SKILL.md`
+(canonical bron: `packages/wbso/bin/wbso`, gesynchroniseerd via
+`bin/sync-wbso-cli`). Dat werkt na plugin-install én na
+`npx skills add wbso-ai/skill`.
 
-Codex zet plugin-root `bin/` niet gegarandeerd in `$PATH`. Voor Codex
-heeft deze skill daarom een `scripts/wbso` wrapper naast `SKILL.md`.
-Gebruik `wbso` als die in `$PATH` staat; gebruik anders de
-skill-local wrapper als `$WBSO_CLI`:
+Claude Code zet plugin-root `bin/` ook in `$PATH` (via
+`${CLAUDE_PLUGIN_ROOT}/bin/wbso`). Na `npx skills add` staat alleen de
+skill-map geïnstalleerd — daarom shipt elke skill een self-contained
+`scripts/wbso`. Resolve in deze volgorde:
 
 ```bash
-WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+WBSO_CLI="$(
+  command -v wbso 2>/dev/null ||
+  { [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/wbso" ] && printf '%s\n' "${CLAUDE_PLUGIN_ROOT}/bin/wbso"; } ||
+  find \
+    "$PWD" \
+    "$HOME/.claude/skills" \
+    "$PWD/.claude/skills" \
+    "$HOME/.cursor/skills" \
+    "$PWD/.cursor/skills" \
+    "$HOME/.agents/skills" \
+    "$PWD/.agents/skills" \
+    "$HOME/.codex/skills" \
+    "$HOME/.codex/plugins/cache/wbso-ai/wbso" \
+    "$HOME/.codex/plugins/cache" \
+    -path '*/scripts/wbso' -type f 2>/dev/null |
+  sort -V | tail -1
+)"
 test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
 "$WBSO_CLI" context
 ```

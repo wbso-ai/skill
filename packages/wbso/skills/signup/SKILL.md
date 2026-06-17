@@ -6,10 +6,27 @@ description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wannee
 # Account aanmaken op WBSO.ai
 
 Claude Code zet plugin-root `bin/` in `$PATH`, dus daar werkt `wbso`
-direct. Codex gebruikt de skill-local wrapper `scripts/wbso`.
+direct. Anders resolve je de self-contained `scripts/wbso` naast deze
+skill als `$WBSO_CLI`:
 
 ```bash
-WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+WBSO_CLI="$(
+  command -v wbso 2>/dev/null ||
+  { [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/wbso" ] && printf '%s\n' "${CLAUDE_PLUGIN_ROOT}/bin/wbso"; } ||
+  find \
+    "$PWD" \
+    "$HOME/.claude/skills" \
+    "$PWD/.claude/skills" \
+    "$HOME/.cursor/skills" \
+    "$PWD/.cursor/skills" \
+    "$HOME/.agents/skills" \
+    "$PWD/.agents/skills" \
+    "$HOME/.codex/skills" \
+    "$HOME/.codex/plugins/cache/wbso-ai/wbso" \
+    "$HOME/.codex/plugins/cache" \
+    -path '*/scripts/wbso' -type f 2>/dev/null |
+  sort -V | tail -1
+)"
 test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
 ```
 
@@ -115,7 +132,23 @@ context` tot er minstens één `<project slug=...>` blok in de respons
 zit (max ~2 min, 4s per poging):
 
 ```bash
-WBSO_CLI="$(command -v wbso 2>/dev/null || find "$PWD" "$HOME/.codex/plugins/cache/wbso-ai/wbso" "$HOME/.codex/plugins/cache" -path '*/skills/*/scripts/wbso' -type f 2>/dev/null | sort -V | tail -1)"
+WBSO_CLI="$(
+  command -v wbso 2>/dev/null ||
+  { [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/wbso" ] && printf '%s\n' "${CLAUDE_PLUGIN_ROOT}/bin/wbso"; } ||
+  find \
+    "$PWD" \
+    "$HOME/.claude/skills" \
+    "$PWD/.claude/skills" \
+    "$HOME/.cursor/skills" \
+    "$PWD/.cursor/skills" \
+    "$HOME/.agents/skills" \
+    "$PWD/.agents/skills" \
+    "$HOME/.codex/skills" \
+    "$HOME/.codex/plugins/cache/wbso-ai/wbso" \
+    "$HOME/.codex/plugins/cache" \
+    -path '*/scripts/wbso' -type f 2>/dev/null |
+  sort -V | tail -1
+)"
 test -n "$WBSO_CLI" || { echo "WBSO CLI niet gevonden"; exit 127; }
 for i in $(seq 1 30); do
   "$WBSO_CLI" context > /tmp/wbso-ctx.md
