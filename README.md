@@ -19,11 +19,12 @@ agent een WBSO-expert die jouw aanvraag kent en helpt uren te boeken.
 Zo boek je moeiteloos jouw WBSO-waardige uren en is jouw WBSO-administratie
 altijd up-to-date en klaar voor een RVO-controle!
 
-Deze plugin lost dat op. De skill draait in jouw werk-omgeving, leest waar
-je vandaag aan bezig was (commits + lokale agent-sessies, volledig lokaal),
-beoordeelt het tegen de RVO-criteria, en boekt het direct in op WBSO.ai.
+Deze skill draait in jouw werk-omgeving, leest waar je vandaag aan bezig
+was (commits + lokale agent-sessies, volledig lokaal), beoordeelt het tegen
+de RVO-criteria, en boekt het direct in op WBSO.ai.
 
-Compatible met Claude Code en Codex.
+Compatible met Claude Code, Codex, Cursor en [70+ andere
+agents](https://skills.sh).
 
 Op onze website staat meer informatie over hoe de
 [WBSO-administratie](https://wbso.ai/wbso-administratie) werkt.
@@ -72,64 +73,39 @@ tekst — geen wrapper-laag, geen UI-omleiding.
 
 ## Installatie
 
-### Claude Code
-
-```bash
-claude plugins marketplace add wbso-ai/skill
-claude plugins install wbso@wbso-ai
-claude "boek WBSO uren"
-```
-
-Of via deze single prompt:
-
-```text
-Installeer de WBSO.ai skill wanneer je deze nog niet hebt met `claude plugins marketplace add wbso-ai/skill` en `claude plugins install wbso@wbso-ai`. Daarna de skill aanroepen om de WBSO-uren te boeken.
-```
-
-Gebruik daarna de slash-commands in Claude Code:
-
-```text
-/wbso
-/wbso:whoami
-/wbso:auth
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add wbso-ai/skill
-codex /plugins
-codex "boek WBSO uren"
-```
-
-Of via deze single prompt:
-
-```text
-Installeer de WBSO.ai plugin zelf als die nog ontbreekt met `codex plugin marketplace add wbso-ai/skill`. Alleen als handmatige activatie nodig is, vraag mij `/plugins` te gebruiken. Roep daarna direct de WBSO-skill aan om mijn uren te boeken.
-```
-
-### skills.sh (Claude Code, Codex, Cursor, en 70+ agents)
+Via [skills.sh](https://skills.sh) — één commando voor elke ondersteunde
+agent:
 
 ```bash
 npx skills add wbso-ai/skill
 ```
 
-Project-lokaal of globaal (`-g`). Elke skill shipt een self-contained
-`scripts/wbso` CLI — geen aparte plugin-install nodig.
+Globaal (user-level, alle projecten):
 
-Installeer daarna `wbso` vanuit de WBSO.ai marketplace en start een
-nieuwe thread. Gebruik de skills expliciet met `$`:
-
-```text
-$wbso registreer mijn WBSO-uren van vandaag
-$wbso:whoami
-$wbso:auth log me in bij WBSO.ai
+```bash
+npx skills add wbso-ai/skill -g
 ```
 
-Of vraag het in gewone taal:
+Alle skills non-interactief installeren:
+
+```bash
+npx skills add wbso-ai/skill --all -y
+```
+
+Elke skill shipt een self-contained `scripts/wbso` CLI; geen aparte
+plugin- of marketplace-install nodig.
+
+Roep daarna de skill aan in gewone taal:
 
 ```text
-Gebruik WBSO.ai om mijn WBSO-uren van vandaag te registreren.
+boek mijn WBSO-uren van vandaag
+```
+
+Of expliciet — afhankelijk van je agent:
+
+```text
+/wbso              # Claude Code
+$wbso              # Codex
 ```
 
 De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
@@ -139,18 +115,17 @@ account in 60 seconden.
 
 ## Skills
 
-| Skill      | Claude Code      | Codex            | Wat het doet                              |
-| ---------- | ---------------- | ---------------- | ----------------------------------------- |
-| `wbso`     | `/wbso`          | `$wbso`          | Registreer uren via een gesprek           |
-| `signup`   | `/wbso:signup`   | `$wbso:signup`   | Maak een nieuw WBSO.ai-account aan        |
-| `auth`     | `/wbso:auth`     | `$wbso:auth`     | Log in met een bestaande API key          |
-| `whoami`   | `/wbso:whoami`   | `$wbso:whoami`   | Toon het ingelogde account                |
-| `logout`   | `/wbso:logout`   | `$wbso:logout`   | Verwijder de lokale config                |
-| `feedback` | `/wbso:feedback` | `$wbso:feedback` | Stuur feedback over het platform naar het team |
+| Skill      | Wat het doet                              |
+| ---------- | ----------------------------------------- |
+| `wbso`     | Registreer uren via een gesprek           |
+| `signup`   | Maak een nieuw WBSO.ai-account aan        |
+| `auth`     | Log in met een bestaande API key          |
+| `whoami`   | Toon het ingelogde account                |
+| `logout`   | Verwijder de lokale config                |
+| `feedback` | Stuur feedback over het platform naar het team |
 
-Optioneel snelboeken: `/wbso 4` in Claude Code, of `$wbso 4 uur` in
-Codex, om direct 4 uur voor te stellen op je voornaamste activiteit van
-vandaag.
+Optioneel snelboeken: geef uren mee bij de aanroep, bv. `/wbso 4` of
+`boek 4 uur WBSO`.
 
 ## Privacy
 
@@ -167,11 +142,14 @@ trainingsmateriaal.
 ## Updaten
 
 ```bash
-claude plugins update wbso@wbso-ai
-codex plugin marketplace upgrade wbso-ai
+npx skills update wbso-ai/skill
 ```
 
-Daarna Claude Code of Codex herstarten.
+Globaal:
+
+```bash
+npx skills update wbso-ai/skill -g
+```
 
 ## Geen account? Start hier
 
@@ -246,8 +224,8 @@ bin/check-wbso-cli-sync    # CI-check: faalt als sync ontbreekt
 
 Dit volgt hetzelfde `build`/`check`-contract als multi-agent
 marketplaces (zie o.a. [how-plugins-work](https://github.com/epologee/laicluse-agent-fieldkit)):
-canonical bron in `bin/`, skill-local kopie voor portable installs
-(`npx skills add`), plugin-root `$PATH` voor Claude Code.
+canonical bron in `bin/`, skill-local kopie voor portable installs via
+`npx skills add`.
 
 ### Lokaal testen
 
