@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-WBSO_SKILL_VERSION="1.27"
+WBSO_SKILL_VERSION="1.36"
 # wbso — thin CLI wrapper voor de WBSO.ai compliance API.
 #
 # Subcommands: signup, login, context, track-time, untrack-time, evidence, untrack-evidence, suggest-project, feedback, whoami

@@ -1,6 +1,6 @@
 {
   "name": "wbso",
-  "version": "1.27",
+  "version": "1.36",
   "description": "Registreer WBSO-uren via een gesprek. Stelt 2-3 gerichte vragen, beoordeelt WBSO-waardigheid op basis van RVO-criteria (technisch nieuw, knelpunt, onzekerheid), en boekt direct via de WBSO.ai compliance API. Verwerkt alerts (missing_evidence, over_8_hours, weekend) en biedt aan onderbouwing toe te voegen.",
   "author": {
     "name": "WBSO.ai",
