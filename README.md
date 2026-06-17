@@ -74,23 +74,27 @@ tekst — geen wrapper-laag, geen UI-omleiding.
 ## Installatie
 
 Via [skills.sh](https://skills.sh) — één commando voor elke ondersteunde
-agent:
+agent. Met `--skill '*'` installeer je alle skills in één keer, zonder ze
+los aan te vinken:
 
 ```bash
-npx skills add wbso-ai/skill
+npx skills add wbso-ai/skill --skill '*'
 ```
 
 Globaal (user-level, alle projecten):
 
 ```bash
-npx skills add wbso-ai/skill -g
+npx skills add wbso-ai/skill --skill '*' -g
 ```
 
-Alle skills non-interactief installeren:
+Volledig non-interactief (alle skills, alle agents, geen prompts):
 
 ```bash
-npx skills add wbso-ai/skill --all -y
+npx skills add wbso-ai/skill --all
 ```
+
+> De `'*'` moet tussen quotes, anders expandeert je shell de asterisk naar
+> bestandsnamen. Laat `--skill '*'` weg om interactief een subset te kiezen.
 
 Skill-namen gebruiken het `wbso-` prefix (`wbso-auth`, `wbso-signup`, …)
 zodat een globale install (`-g`) niet botst met generieke namen als
