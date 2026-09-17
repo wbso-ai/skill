@@ -123,7 +123,9 @@ $wbso              # Codex
 De eerste keer vraagt de skill of je al een WBSO.ai-account hebt.
 **Heb je 'm nog niet?** Je maakt 'm aan via de skill zelf — naam,
 e-mail, bedrijf. Geen wurgcontracten, geen jaarbinding, gewoon een
-account in 60 seconden.
+account in 60 seconden. Je eerdere WBSO-aanvraag koppel je door de
+RVO-PDF direct vanuit de agent te uploaden (`wbso upload`), zonder
+naar de browser te hoeven.
 
 ## Skills
 
@@ -334,7 +336,8 @@ CLI ook vanuit een gewone shell gebruiken:
 ln -s ~/Documents/skill/packages/wbso/bin/wbso ~/.local/bin/wbso
 ```
 
-Subcommands: `login`, `context`, `whoami`, `track-time`,
-`untrack-time`, `evidence`. Run `wbso help` voor de details.
+Subcommands: `signup`, `login`, `context`, `upload`, `upload-status`,
+`whoami`, `track-time`, `untrack-time`, `evidence`, `untrack-evidence`,
+`suggest-project`, `feedback`. Run `wbso help` voor de details.
 
 </details>
