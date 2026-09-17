@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wbso — thin CLI wrapper voor de WBSO.ai compliance API.
 #
-# Subcommands: signup, login, context, track-time, untrack-time, evidence, untrack-evidence, suggest-project, feedback, whoami
+# Subcommands: signup, login, context, upload, upload-status, track-time, untrack-time, evidence, untrack-evidence, suggest-project, feedback, whoami
 # Config wordt geladen uit ~/.config/wbso/.env.local (optionele dev-override)
 # en ~/.config/wbso/config (api key, email, base url).
 
@@ -80,6 +80,8 @@ Commands:
   signup        Maak een nieuw WBSO.ai account aan
   login         Sla bestaande api-key + email op in config
   context       Haal compliance-context op (projects, time_entries, alerts, instructions)
+  upload        Upload een eerdere WBSO-aanvraag (RVO-bevestiging als PDF) en wacht op de import
+  upload-status Toon de importstatus van een geüploade aanvraag
   track-time    Registreer uren op een project
   untrack-time  Verwijder een urenregistratie
   evidence      Voeg onderbouwing toe (idempotent per dag)
@@ -363,6 +365,121 @@ PY
   echo "</codex_user_prompts_today>"
 }
 
+cmd_upload() {
+  local file="${1:-}"
+  if [ -z "$file" ] || [ "${file#--}" != "$file" ]; then
+    echo "error: gebruik: wbso upload <bestand.pdf> [--timeout SECONDS] [--no-wait]" >&2
+    exit 2
+  fi
+  shift
+
+  local wait=true
+  local flags=()
+  while [ $# -gt 0 ]; do
+    if [ "$1" = "--no-wait" ]; then
+      wait=false
+    else
+      flags+=("$1")
+    fi
+    shift
+  done
+  parse_args "timeout" ${flags[@]+"${flags[@]}"}
+  local timeout="${ARG_timeout:-180}"
+
+  if [ ! -f "$file" ]; then
+    echo "error: bestand niet gevonden: $file" >&2
+    exit 2
+  fi
+  if [ "$(head -c 5 "$file")" != "%PDF-" ]; then
+    echo "error: geen PDF-bestand: $file" >&2
+    exit 2
+  fi
+
+  load_env
+  require_auth
+
+  local tmp
+  tmp=$(mktemp)
+  local status
+  status=$(curl -sS -o "$tmp" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer $WBSO_API_KEY" \
+    -F "file=@${file};type=application/pdf" \
+    "$WBSO_API_BASE_URL/api/v1/compliance/submissions")
+
+  if [ "$status" != "202" ]; then
+    cat "$tmp"; echo
+    rm -f "$tmp"
+    echo "error: upload mislukt (status $status)" >&2
+    exit 1
+  fi
+
+  if ! $wait; then
+    cat "$tmp"; echo
+    rm -f "$tmp"
+    return 0
+  fi
+
+  local id
+  id=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("id",""))' < "$tmp")
+  rm -f "$tmp"
+  poll_submission "$id" "$timeout"
+}
+
+# Polls the status endpoint until the import finished. Exit codes:
+# 0 imported, 1 import failed, 3 still processing after the timeout.
+poll_submission() {
+  local id="$1"
+  local timeout="$2"
+  local deadline=$(( $(date +%s) + timeout ))
+  local tmp
+  tmp=$(mktemp)
+
+  while :; do
+    local status
+    status=$(curl -sS -o "$tmp" -w '%{http_code}' \
+      -H "Authorization: Bearer $WBSO_API_KEY" \
+      "$WBSO_API_BASE_URL/api/v1/compliance/submissions/$id")
+
+    if [ "$status" != "200" ]; then
+      cat "$tmp"; echo
+      rm -f "$tmp"
+      echo "error: status opvragen mislukt (status $status)" >&2
+      exit 1
+    fi
+
+    local import_status
+    import_status=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' < "$tmp")
+
+    if [ "$import_status" != "processing" ]; then
+      cat "$tmp"; echo
+      rm -f "$tmp"
+      [ "$import_status" = "error" ] && exit 1
+      return 0
+    fi
+
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      cat "$tmp"; echo
+      rm -f "$tmp"
+      echo "error: import nog niet klaar na ${timeout}s; check later met 'wbso upload-status --id $id'" >&2
+      exit 3
+    fi
+
+    sleep 4
+  done
+}
+
+cmd_upload_status() {
+  parse_args "id" "$@"
+  : "${ARG_id:?--id verplicht}"
+
+  load_env
+  require_auth
+
+  curl -sS "$WBSO_API_BASE_URL/api/v1/compliance/submissions/$ARG_id" \
+    -H "Authorization: Bearer $WBSO_API_KEY"
+  echo
+}
+
 cmd_track_time() {
   parse_args "project date duration user-email" "$@"
   : "${ARG_project:?--project verplicht}"
@@ -561,6 +678,8 @@ main() {
     signup) cmd_signup "$@" ;;
     login) cmd_login "$@" ;;
     context) cmd_context "$@" ;;
+    upload) cmd_upload "$@" ;;
+    upload-status) cmd_upload_status "$@" ;;
     track-time) cmd_track_time "$@" ;;
     untrack-time) cmd_untrack_time "$@" ;;
     evidence) cmd_evidence "$@" ;;

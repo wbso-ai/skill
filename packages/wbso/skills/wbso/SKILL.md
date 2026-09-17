@@ -77,6 +77,9 @@ Beschikbare subcommands:
 - `wbso signup --first-name X --last-name Y --email Z --company-name W`
 - `wbso login --api-key Y` (email wordt uit de respons gehaald)
 - `wbso context [--date YYYY-MM-DD] [--user-email X]`
+- `wbso upload <bestand.pdf> [--timeout SECONDS] [--no-wait]` (eerdere WBSO-aanvraag
+  als RVO-PDF inlezen; wacht tot de import klaar is)
+- `wbso upload-status --id N`
 - `wbso track-time --project SLUG --date YYYY-MM-DD --duration N [--user-email X]`
 - `wbso untrack-time --id N`
 - `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
@@ -95,9 +98,10 @@ Output:
 - `wbso context` retourneert **markdown met XML-tags** (verhaal-vorm,
   geoptimaliseerd om te lezen — kijk naar `<status>`, `<project>`,
   `<submission_owners>` en `<alert>` tags)
-- `wbso signup`, `wbso track-time`, `wbso evidence`, `wbso untrack-time`,
-  `wbso untrack-evidence`, `wbso suggest-project` retourneren **JSON** van
-  de server (de skill leest die direct)
+- `wbso signup`, `wbso upload`, `wbso upload-status`, `wbso track-time`,
+  `wbso evidence`, `wbso untrack-time`, `wbso untrack-evidence`,
+  `wbso suggest-project` retourneren **JSON** van de server (de skill leest
+  die direct)
 - `wbso login` print `ok (<email>)` bij succes
 
 ## Stap 0: Login check via `wbso context`
@@ -213,6 +217,22 @@ lokale signalen leest 'ie uit `git log`, `~/.claude/projects/` en
 `~/.codex/sessions/`.
 Alleen jouw uiteindelijke conclusie (project + uren + datum + evt.
 onderbouwing) gaat naar de API.
+
+### Geen projecten in de context? Eerdere aanvraag uploaden
+
+Staat er geen enkel `<project>`-blok in de context, dan is het account
+nog niet gekoppeld aan een WBSO-aanvraag. Uren boeken kan dan nog niet.
+Bied aan de RVO-bevestiging van de eerdere aanvraag direct in te lezen:
+
+> *"Ik zie nog geen WBSO-projecten op je account. Heb je de
+> RVO-bevestiging van je aanvraag als PDF ('Aanvraag invoerweergave'
+> van mijn.rvo.nl)? Geef het pad, dan lees ik 'm direct in."*
+
+Bij een bestandspad: volg het onderdeel **Uploaden vanuit de agent** uit
+de gebundelde `wbso-signup` skill (`wbso upload <pad.pdf>` en de
+afhandeling van `imported` / `error`). Alleen een aanvraag-beheerder of
+technisch contactpersoon mag uploaden; krijgt de gebruiker een
+weigering, verwijs dan naar de collega uit `<submission_owners>`.
 
 ### Vooraf checken: alert-regels
 

@@ -1,6 +1,6 @@
 ---
 name: wbso-signup
-description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik de wbso-auth skill.'
+description: 'Maak een nieuw WBSO.ai-account aan vanuit de skill en koppel de eerdere WBSO-aanvraag door de RVO-PDF direct te uploaden. Gebruik wanneer de gebruiker zegt "maak een account aan", "ik wil registreren", "nog geen account", "upload mijn aanvraag", of zich voor het eerst aanmeldt. Voor inloggen met een bestaande key, gebruik de wbso-auth skill.'
 ---
 
 # Account aanmaken op WBSO.ai
@@ -90,15 +90,81 @@ te maken. Vraag dán om die key en gebruik de gebundelde `wbso-auth` skill (of
 Bij `422` toont het response-body een `error`-veld (bijv. ongeldig
 e-mailadres). Laat dat aan de gebruiker zien.
 
-## Browser openen voor profiel
+## Aanvraag koppelen: PDF uploaden of wizard in de browser
+
+Direct na signup heeft het account nog geen projecten. Die komen uit de
+eerdere WBSO-aanvraag: de RVO-bevestiging "Aanvraag invoerweergave" als
+PDF. Vraag in plain tekst of de gebruiker die bij de hand heeft:
+
+> *"Account is aangemaakt. Om uren te kunnen boeken moet ik je
+> WBSO-aanvraag kennen. Heb je de RVO-bevestiging van je aanvraag als
+> PDF ('Aanvraag invoerweergave' van mijn.rvo.nl)? Geef het pad, dan
+> lees ik 'm direct in. Geen PDF bij de hand? Dan open ik een korte
+> wizard in je browser, daar kun je ook een demo-aanvraag kiezen."*
+
+Interpreteer:
+
+- Een bestandspad (of een gesleept bestand) → **Uploaden vanuit de agent**
+- "nee" / "geen PDF" / "demo" / "browser" / "wizard" → **Wizard in de browser**
+
+### Uploaden vanuit de agent
+
+```bash
+"$WBSO_CLI" upload "<pad/naar/bestand.pdf>"
+```
+
+De CLI uploadt de PDF, wacht tot de import klaar is (elke 4 seconden
+een check, maximaal 3 minuten) en print dan de JSON-status:
+
+```json
+{
+  "id": 42,
+  "status": "imported",
+  "import_error": null,
+  "so_number": "SO12345678",
+  "status_url": "https://portal.wbso.ai/api/v1/compliance/submissions/42",
+  "projects": [
+    {"slug": "ai-assistent-klantenservice", "title": "AI-assistent voor klantenservice", "number": "1"}
+  ]
+}
+```
+
+Exit codes: `0` geïmporteerd, `1` upload geweigerd of import mislukt,
+`3` na 3 minuten nog niet klaar.
+
+Handel het resultaat af in plain tekst, zonder slugs, ID's of
+HTTP-codes:
+
+- **`status: imported`** → noem de projecttitels kort op en ga door met
+  de `wbso` skill om uren te boeken:
+
+  > *"Je aanvraag is ingelezen. Ik zie deze projecten: AI-assistent voor
+  > klantenservice, Slimme classifier. Zullen we meteen uren boeken?"*
+
+- **`status: error`** → het document was geen RVO-bevestiging of niet
+  leesbaar. Leg uit waar de juiste PDF staat en bied aan het opnieuw te
+  proberen, of anders de wizard te openen:
+
+  > *"Dit lijkt niet de RVO-bevestiging te zijn. Zo vind je de juiste
+  > PDF: log in op mijn.rvo.nl met eHerkenning, open de meest recente
+  > aanvraag, ga naar het tabblad Documenten en download 'Aanvraag
+  > invoerweergave'. Geef het pad van die PDF, of zeg 'wizard' dan open
+  > ik de browser."*
+
+- **Upload geweigerd** (respons met alleen een `error`-veld): geen PDF,
+  groter dan 10 MB, of het account mag geen aanvraag uploaden. Geef de
+  melding uit `error` in mensentaal terug en val terug op de wizard.
+- **Exit code 3** → zeg dat de import nog loopt. Check na een minuut
+  opnieuw met `"$WBSO_CLI" upload-status --id <id>` en handel de JSON
+  daarna op dezelfde manier af.
+
+### Wizard in de browser
 
 De `login_url` is een eenmalig magic-link token (10 minuten geldig).
 Leg uit waarom 't nodig is, vraag dán pas toestemming:
 
-> *"Account is aangemaakt. Voor we uren kunnen registreren moet je
-> account nog gekoppeld worden aan een WBSO-aanvraag — dat doe je in
-> een korte wizard in de browser: óf je upload je RVO-beschikkings-
-> PDF, óf je kiest een demo-aanvraag om mee te spelen."*
+> *"Dan open ik een korte wizard in je browser: daar upload je de
+> RVO-PDF alsnog, óf je kiest een demo-aanvraag om mee te spelen."*
 >
 > *"Mag ik die wizard nu openen in je browser?"*
 
@@ -125,11 +191,10 @@ Bij "nee" / "later": toon dezelfde URL (mét `utm_source=agent_skill` in
 `return_to`) als platte tekst zodat de gebruiker 'm zelf kan openen,
 en stuur dezelfde afmaak-melding.
 
-## Wacht tot de wizard klaar is
+#### Wacht tot de wizard klaar is
 
-Direct na signup heeft het account nog geen projecten. Poll `wbso
-context` tot er minstens één `<project slug=...>` blok in de respons
-zit (max ~2 min, 4s per poging):
+Poll `wbso context` tot er minstens één `<project slug=...>` blok in de
+respons zit (max ~2 min, 4s per poging):
 
 ```bash
 WBSO_CLI="$(
