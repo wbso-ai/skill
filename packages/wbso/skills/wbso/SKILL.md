@@ -82,16 +82,12 @@ Beschikbare subcommands:
 - `wbso upload-status --id N`
 - `wbso track-time --project SLUG --date YYYY-MM-DD --duration N [--user-email X]`
 - `wbso untrack-time --id N`
-- `wbso evidence --title X --description Y --date YYYY-MM-DD [--external-id ID] [--user-email X]`
+- `wbso evidence --title X --description Y --date YYYY-MM-DD [--project SLUG] [--external-id ID] [--user-email X]`
 - `wbso untrack-evidence --id N`
 - `wbso suggest-project --description X`
 - `wbso feedback --message X --category bug|idea|question|compliment|complaint|other [--context JSON]`
 
-`wbso evidence` is idempotent per dag: zonder `--external-id` gebruikt het
-een vast id `wbso-onderbouwing-<user>-<datum>`, dus opnieuw boeken voor
-dezelfde dag werkt de bestaande onderbouwing bij in plaats van een
-duplicaat te maken. Het `id` voor `untrack-evidence` komt uit de
-JSON-respons van `wbso evidence`.
+`wbso evidence` is idempotent per dag, en met `--project` per dag en project: zonder `--external-id` gebruikt het een vast id `wbso-onderbouwing-<user>-<datum>` (met `--project` gevolgd door `-<slug>`), dus opnieuw boeken voor dezelfde dag werkt de bestaande onderbouwing bij in plaats van een duplicaat te maken. Het `id` voor `untrack-evidence` komt uit de JSON-respons van `wbso evidence`.
 
 Output:
 
@@ -521,14 +517,13 @@ moet de datum aangepast?"*
 wbso evidence \
   --title "<titel ≤80>" \
   --description "<beschrijving>" \
-  --date "<YYYY-MM-DD>"
+  --date "<YYYY-MM-DD>" \
+  --project "<project-slug>"
 ```
 
-`--external-id` is optioneel. Laat je 'm weg, dan gebruikt de skill een
-vast id per dag (`wbso-onderbouwing-<user>-<datum>`), zodat een tweede
-aanroep voor dezelfde dag de bestaande onderbouwing bijwerkt in plaats
-van een duplicaat te maken. Wil je de onderbouwing aan één specifieke
-boeking koppelen, geef dan `--external-id time_entry-<id>`.
+Geef `--project` mee met de slug van het project waar de onderbouwing over gaat, meestal het project waar je net de uren op boekte. De onderbouwing hangt dan aan dat project: in de tijdregistratie staat het bolletje in het vakje van het project. Boekte de gebruiker die dag op meerdere projecten, zet dan per project een eigen onderbouwing met elk het eigen `--project`. Laat `--project` alleen weg als de onderbouwing echt over de hele dag gaat en niet bij één project hoort; dan hangt ze aan de dag.
+
+`--external-id` is optioneel. Laat je 'm weg, dan gebruikt de skill een vast id per dag (`wbso-onderbouwing-<user>-<datum>`, met `--project` gevolgd door `-<slug>`), zodat een tweede aanroep voor dezelfde dag en hetzelfde project de bestaande onderbouwing bijwerkt in plaats van een duplicaat te maken.
 
 ### Onderbouwing verwijderen
 
