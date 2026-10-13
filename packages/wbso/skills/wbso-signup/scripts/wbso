@@ -60,6 +60,16 @@ Niet ingelogd. Run `wbso signup` of `wbso login`.
 EOF
 }
 
+# "Jankees van Woezik <jankees@wbso.ai>" -> "jankees@wbso.ai"; a bare
+# address is returned unchanged.
+email_address() {
+  local value="$1"
+  case "$value" in
+    *"<"*">"*) value="${value##*<}"; value="${value%%>*}" ;;
+  esac
+  printf '%s' "$value"
+}
+
 write_config() {
   local email="$1"
   local api_key="$2"
@@ -191,7 +201,7 @@ cmd_login() {
     exit 1
   fi
 
-  write_config "$email" "$ARG_api_key"
+  write_config "$(email_address "$email")" "$ARG_api_key"
   if [ -n "$company" ]; then
     echo "ok ($email · $company)"
   else
@@ -576,7 +586,8 @@ cmd_evidence() {
   # it to the target user so colleagues never collide within a company, and
   # to the project when one is given, so evidence for two projects on the
   # same day does not overwrite each other.
-  local effective_user="${ARG_user_email:-${WBSO_USER:-}}"
+  local effective_user
+  effective_user="$(email_address "${ARG_user_email:-${WBSO_USER:-}}")"
   local external_id="${ARG_external_id:-}"
   if [ -z "$external_id" ]; then
     if [ -n "$effective_user" ]; then
