@@ -84,7 +84,7 @@ Commands:
   upload-status Toon de importstatus van een geüploade aanvraag
   track-time    Registreer uren op een project
   untrack-time  Verwijder een urenregistratie
-  evidence      Voeg onderbouwing toe (idempotent per dag)
+  evidence      Voeg onderbouwing toe (idempotent per dag, of per dag en project met --project)
   untrack-evidence  Verwijder een onderbouwing
   suggest-project  Meld een mogelijk nieuw WBSO-project bij de beheerder
   feedback      Stuur platform-feedback naar het WBSO.ai team
@@ -561,7 +561,7 @@ cmd_untrack_time() {
 }
 
 cmd_evidence() {
-  parse_args "title description date external-id user-email" "$@"
+  parse_args "title description date project external-id user-email" "$@"
   : "${ARG_title:?--title verplicht}"
   : "${ARG_description:?--description verplicht}"
   : "${ARG_date:?--date verplicht}"
@@ -572,7 +572,9 @@ cmd_evidence() {
   # A stable external_id keeps repeated calls for the same day idempotent:
   # the API upserts on (company, external_id), so re-running evidence for a
   # date updates the existing entry instead of creating a duplicate. Scope
-  # it to the target user so colleagues never collide within a company.
+  # it to the target user so colleagues never collide within a company, and
+  # to the project when one is given, so evidence for two projects on the
+  # same day does not overwrite each other.
   local effective_user="${ARG_user_email:-${WBSO_USER:-}}"
   local external_id="${ARG_external_id:-}"
   if [ -z "$external_id" ]; then
@@ -580,6 +582,9 @@ cmd_evidence() {
       external_id="wbso-onderbouwing-${effective_user}-${ARG_date}"
     else
       external_id="wbso-onderbouwing-${ARG_date}"
+    fi
+    if [ -n "${ARG_project:-}" ]; then
+      external_id="${external_id}-${ARG_project}"
     fi
   fi
 
@@ -597,8 +602,10 @@ ev = {
 }
 if len(sys.argv) > 5 and sys.argv[5]:
     ev["user_email"] = sys.argv[5]
+if len(sys.argv) > 6 and sys.argv[6]:
+    ev["project"] = sys.argv[6]
 print(json.dumps({"evidence": ev}))
-' "$ARG_title" "$ARG_description" "$ARG_date" "$external_id" "${ARG_user_email:-}")
+' "$ARG_title" "$ARG_description" "$ARG_date" "$external_id" "${ARG_user_email:-}" "${ARG_project:-}")
 
   curl -sS -X POST "$WBSO_API_BASE_URL/api/v1/compliance/evidence" \
     -H "Authorization: Bearer $WBSO_API_KEY" \
