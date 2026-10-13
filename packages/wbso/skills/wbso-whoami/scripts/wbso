@@ -571,6 +571,33 @@ cmd_untrack_time() {
     -H "Authorization: Bearer $WBSO_API_KEY"
 }
 
+# Versions before 1.46 put "Name <email>" in the default external_id.
+# Reuse such an id when evidence for that day (and project) already
+# exists, so posting again updates it instead of adding a duplicate.
+# Prints nothing when there is none or the lookup fails.
+legacy_evidence_id() {
+  local email="$1" date="$2" project="$3" user_email="$4"
+  local query="date=$date"
+  if [ -n "$user_email" ]; then
+    query="$query&user_email=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$user_email")"
+  fi
+  curl -sS --fail "$WBSO_API_BASE_URL/api/v1/compliance/evidence?$query" \
+    -H "Authorization: Bearer $WBSO_API_KEY" 2>/dev/null | python3 -c '
+import json, re, sys
+email, date, project = sys.argv[1], sys.argv[2], sys.argv[3]
+suffix = "-" + project if project else ""
+pattern = re.compile("^wbso-onderbouwing-.*<" + re.escape(email) + ">-" + re.escape(date + suffix) + "$")
+try:
+    items = json.load(sys.stdin)
+except ValueError:
+    sys.exit(0)
+for item in items if isinstance(items, list) else []:
+    if pattern.match(str(item.get("external_id") or "")):
+        print(item["external_id"])
+        break
+' "$email" "$date" "$project" || true
+}
+
 cmd_evidence() {
   parse_args "title description date project external-id user-email" "$@"
   : "${ARG_title:?--title verplicht}"
@@ -597,6 +624,11 @@ cmd_evidence() {
     fi
     if [ -n "${ARG_project:-}" ]; then
       external_id="${external_id}-${ARG_project}"
+    fi
+    if [ -n "$effective_user" ]; then
+      local legacy_id
+      legacy_id="$(legacy_evidence_id "$effective_user" "$ARG_date" "${ARG_project:-}" "${ARG_user_email:-}")"
+      [ -n "$legacy_id" ] && external_id="$legacy_id"
     fi
   fi
 
