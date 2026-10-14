@@ -500,6 +500,14 @@ respecteer dat, geen onderbouwing, klaar. Eén korte regel: *"Oké, dan
 zonder onderbouwing."* Geen "RVO-risico bij jou", geen tegenvragen.
 De boeking blijft staan.
 
+### `low_commit_scores`
+
+Er staan commits op deze dag, maar geen ervan telt als S&O-onderbouwing. Behandel het zoals `missing_evidence`: bied **één keer** neutraal een onderbouwing aan in plain tekst.
+
+> *"Je commits van vandaag laten weinig S&O-werk zien. Wil je er kort een onderbouwing bij zetten? Eén à twee zinnen is genoeg. (Of zeg 'skip'.)"*
+
+Verder hetzelfde als bij `missing_evidence`: neem het antwoord zoals 'ie is en POST naar `/evidence`, of respecteer 'skip' zonder door te vragen.
+
 ### `over_8_hours`
 
 Plain tekst: *"8+ uur is een rode vlag bij RVO-controle. Klopt
