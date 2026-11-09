@@ -141,7 +141,11 @@ HTTP-codes:
   > *"Je aanvraag is ingelezen. Ik zie deze projecten: AI-assistent voor
   > klantenservice, Slimme classifier. Zullen we meteen uren boeken?"*
 
-- **`status: error`** → het document was geen RVO-bevestiging of niet
+- **`status: error` en `import_error` zegt dat de aanvraag al in het portal staat** → die aanvraag is al eerder ingelezen. Lees hem niet opnieuw in, maar zeg dat hij er al staat en ga door met de `wbso` skill om uren te boeken:
+
+  > *"Deze aanvraag staat al in je portal, dus die hoef ik niet opnieuw in te lezen. Zullen we meteen uren boeken?"*
+
+- **`status: error`** (andere `import_error`) → het document was geen RVO-bevestiging of niet
   leesbaar. Leg uit waar de juiste PDF staat en bied aan het opnieuw te
   proberen, of anders de wizard te openen:
 
